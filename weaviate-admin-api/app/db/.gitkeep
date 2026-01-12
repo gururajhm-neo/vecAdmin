@@ -1,0 +1,4 @@
+# Future: SQLite database integration
+# This folder is reserved for database models and migrations
+# when we add query history, audit logs, and saved queries
+

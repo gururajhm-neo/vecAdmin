@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Weaviate vector database (optional - use if not already running)
+  weaviate:
+    image: semitechnologies/weaviate:1.23.0
+    ports:
+      - "8080:8080"
+    environment:
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      ENABLE_MODULES: ''
+      CLUSTER_HOSTNAME: 'node1'
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: unless-stopped
+
+  # FastAPI backend
+  backend:
+    build:
+      context: ./weaviate-admin-api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - WEAVIATE_URL=http://weaviate:8080
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      - weaviate
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # React frontend (development)
+  frontend-dev:
+    build:
+      context: ./weaviate-admin-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api/v1
+    volumes:
+      - ./weaviate-admin-ui/src:/app/src
+      - ./weaviate-admin-ui/public:/app/public
+    depends_on:
+      - backend
+    profiles:
+      - dev
+
+volumes:
+  weaviate_data:
+    driver: local
+
