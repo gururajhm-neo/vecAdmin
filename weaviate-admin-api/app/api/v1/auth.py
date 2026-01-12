@@ -39,6 +39,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     """
     return UserResponse(
         email=current_user["email"],
-        name=current_user["name"]
+        name=current_user["name"],
+        project_id=current_user.get("project_id")
     )
 

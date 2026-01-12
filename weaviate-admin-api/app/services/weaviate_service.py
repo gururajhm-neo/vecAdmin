@@ -8,13 +8,30 @@ class WeaviateService:
     
     def __init__(self):
         """Initialize Weaviate client connection."""
-        self.client = weaviate.Client(
-            url=settings.WEAVIATE_URL,
-            timeout_config=(5, 15)  # 5s connect, 15s read timeout
-        )
+        self._client = None
+        self._connection_error = None
+        try:
+            self._client = weaviate.Client(
+                url=settings.WEAVIATE_URL,
+                timeout_config=(5, 15),  # 5s connect, 15s read timeout
+                startup_period=2  # Shorter timeout for faster failure
+            )
+        except Exception as e:
+            self._connection_error = str(e)
+            print(f"Warning: Could not connect to Weaviate at {settings.WEAVIATE_URL}: {e}")
+            print("The API will start but Weaviate operations will fail.")
+    
+    @property
+    def client(self):
+        """Get Weaviate client, raise error if not connected."""
+        if self._client is None:
+            raise Exception(f"Weaviate is not connected: {self._connection_error}")
+        return self._client
     
     def is_ready(self) -> bool:
         """Check if Weaviate is ready."""
+        if self._client is None:
+            return False
         try:
             return self.client.is_ready()
         except Exception:
@@ -56,12 +73,24 @@ class WeaviateService:
         except Exception:
             return None
     
-    def count_objects(self, class_name: str) -> int:
-        """Count objects in a class using aggregate query."""
+    def count_objects(self, class_name: str, project_id: Optional[int] = None) -> int:
+        """Count objects in a class, optionally filtered by project_id."""
+        where_clause = ""
+        if project_id is not None:
+            where_clause = f'''
+            where: {{
+                path: ["project_id"]
+                operator: Equal
+                valueInt: {project_id}
+            }}
+            '''
+        
         query = f"""
         {{
             Aggregate {{
-                {class_name} {{
+                {class_name}(
+                    {where_clause}
+                ) {{
                     meta {{
                         count
                     }}
@@ -84,18 +113,64 @@ class WeaviateService:
         class_name: str,
         limit: int = 50,
         offset: int = 0,
-        properties: Optional[List[str]] = None
+        properties: Optional[List[str]] = None,
+        search_text: Optional[str] = None,
+        project_id: Optional[int] = None
     ) -> Dict:
-        """Query objects with pagination."""
+        """Query objects with pagination, search, and project_id filtering."""
         if properties is None:
             properties = ["_additional { id }"]
         
         props_str = " ".join(properties)
         
+        # Build where clause conditions
+        where_conditions = []
+        
+        # Filter by project_id if provided (customer/organization filter)
+        if project_id is not None:
+            where_conditions.append(f'''
+            {{
+                path: ["project_id"]
+                operator: Equal
+                valueInt: {project_id}
+            }}
+            ''')
+        
+        # Add search filter if provided
+        if search_text and search_text.strip():
+            search_clean = search_text.strip()
+            where_conditions.append(f'''
+            {{
+                path: ["_additional", "id"]
+                operator: Like
+                valueString: "*{search_clean}*"
+            }}
+            ''')
+        
+        # Combine conditions
+        where_clause = ""
+        if where_conditions:
+            if len(where_conditions) == 1:
+                where_clause = f"where: {where_conditions[0]}"
+            else:
+                where_clause = f"""
+                where: {{
+                    operator: And
+                    operands: [
+                        {where_conditions[0]},
+                        {where_conditions[1]}
+                    ]
+                }}
+                """
+        
         query = f"""
         {{
             Get {{
-                {class_name}(limit: {limit}, offset: {offset}) {{
+                {class_name}(
+                    limit: {limit}
+                    offset: {offset}
+                    {where_clause}
+                ) {{
                     {props_str}
                 }}
             }}
@@ -109,13 +184,25 @@ class WeaviateService:
         class_name: str,
         object_id: str,
         limit: int = 5,
-        properties: Optional[List[str]] = None
+        properties: Optional[List[str]] = None,
+        project_id: Optional[int] = None
     ) -> Dict:
-        """Find similar objects using nearObject."""
+        """Find similar objects using nearObject, optionally filtered by project_id."""
         if properties is None:
             properties = ["_additional { id distance }"]
         
         props_str = " ".join(properties)
+        
+        # Add project_id filter if provided
+        where_clause = ""
+        if project_id is not None:
+            where_clause = f'''
+            where: {{
+                path: ["project_id"]
+                operator: Equal
+                valueInt: {project_id}
+            }}
+            '''
         
         query = f"""
         {{
@@ -125,6 +212,7 @@ class WeaviateService:
                         id: "{object_id}"
                     }}
                     limit: {limit}
+                    {where_clause}
                 ) {{
                     {props_str}
                 }}

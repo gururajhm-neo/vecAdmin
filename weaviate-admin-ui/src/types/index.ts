@@ -2,6 +2,7 @@
 export interface User {
   email: string;
   name: string;
+  project_id?: number;  // Customer/Project identifier
 }
 
 export interface LoginRequest {
@@ -34,6 +35,7 @@ export interface DashboardData {
   total_objects: number;
   version?: string;
   hostname?: string;
+  project_id?: number;  // Current user's project ID
 }
 
 // Schema Types

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime
+from typing import Optional
 from app.models.dashboard import DashboardOverview, HealthStatus, MemoryUsage
 from app.services.weaviate_service import weaviate_service
 from app.middleware.auth import get_current_user
@@ -15,12 +16,27 @@ router = APIRouter()
 
 
 @router.get("/overview", response_model=DashboardOverview)
-async def get_dashboard_overview(current_user: dict = Depends(get_current_user)):
+async def get_dashboard_overview(
+    project_id: Optional[int] = Query(None, description="Filter by project_id. If not provided, uses user's project_id from token."),
+    current_user: dict = Depends(get_current_user)
+):
     """
     Get dashboard overview with health status, object counts, and memory usage.
     Requires authentication.
+    
+    Query Parameters:
+    - project_id: Optional. If provided, filters data by this project_id.
+                   If not provided, uses project_id from user's token.
+                   If neither exists, shows all data.
     """
     try:
+        # Use project_id from query parameter if provided, otherwise from token
+        if project_id is None:
+            project_id = current_user.get("project_id")
+        
+        # Debug: Log current user info
+        print(f"[DEBUG] Dashboard request - User: {current_user.get('email')}, Project ID: {project_id}")
+        
         # Check if Weaviate is ready
         is_ready = weaviate_service.is_ready()
         
@@ -37,16 +53,21 @@ async def get_dashboard_overview(current_user: dict = Depends(get_current_user))
             last_checked=datetime.utcnow().isoformat()
         )
         
-        # Get object counts for each class
+        # Get object counts for each class (filtered by project_id if provided)
         object_counts = {}
         total_objects = 0
         
         if "classes" in schema:
             for class_obj in schema["classes"]:
                 class_name = class_obj["class"]
-                count = weaviate_service.count_objects(class_name)
-                object_counts[class_name] = count
-                total_objects += count
+                try:
+                    count = weaviate_service.count_objects(class_name, project_id=project_id)
+                    object_counts[class_name] = count
+                    total_objects += count
+                    print(f"[DEBUG] {class_name}: {count} objects (project_id={project_id})")
+                except Exception as e:
+                    print(f"[ERROR] Failed to count {class_name}: {str(e)}")
+                    object_counts[class_name] = 0
         
         # Get memory stats
         memory_stats = get_memory_stats(nodes_status)
@@ -70,7 +91,8 @@ async def get_dashboard_overview(current_user: dict = Depends(get_current_user))
             object_counts=object_counts,
             total_objects=total_objects,
             version=version,
-            hostname=hostname
+            hostname=hostname,
+            project_id=project_id  # Include project_id in response
         )
         
     except Exception as e:

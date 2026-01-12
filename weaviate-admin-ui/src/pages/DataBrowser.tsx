@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid } from '@mui/material';
+import { 
+  Box, 
+  Typography, 
+  Paper, 
+  Grid, 
+  TextField, 
+  InputAdornment, 
+  IconButton 
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { getSchema } from '../api/schema';
 import { getObjects, getObjectDetail, findSimilarObjects } from '../api/data';
 import { WeaviateObject } from '../types';
@@ -10,9 +20,12 @@ import ClassSelector from '../components/Data/ClassSelector';
 import ObjectTable from '../components/Data/ObjectTable';
 import ObjectDetailModal from '../components/Data/ObjectDetailModal';
 import SimilarObjects from '../components/Data/SimilarObjects';
+import ProjectSelector from '../components/Common/ProjectSelector';
 import { DEFAULT_PAGE_SIZE } from '../utils/constants';
+import { useAuth } from '../contexts/AuthContext';
 
 const DataBrowser: React.FC = () => {
+  const { user } = useAuth();
   const [classes, setClasses] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [objects, setObjects] = useState<WeaviateObject[]>([]);
@@ -21,6 +34,10 @@ const DataBrowser: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<number | 'all' | null>(
+    user?.project_id || 'all'
+  );
   
   // Modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -35,12 +52,12 @@ const DataBrowser: React.FC = () => {
     fetchClasses();
   }, []);
 
-  // Fetch objects when class or pagination changes
+  // Fetch objects when class, pagination, search, or project changes
   useEffect(() => {
     if (selectedClass) {
       fetchObjects();
     }
-  }, [selectedClass, page, rowsPerPage]);
+  }, [selectedClass, page, rowsPerPage, searchTerm, selectedProjectId]);
 
   const fetchClasses = async () => {
     try {
@@ -66,7 +83,9 @@ const DataBrowser: React.FC = () => {
       const result = await getObjects(
         selectedClass,
         rowsPerPage,
-        page * rowsPerPage
+        page * rowsPerPage,
+        searchTerm || undefined,
+        selectedProjectId
       );
       setObjects(result.objects);
       setTotal(result.total);
@@ -81,6 +100,17 @@ const DataBrowser: React.FC = () => {
     setSelectedClass(className);
     setPage(0);
     setShowingSimilar(false);
+    setSearchTerm(''); // Clear search when changing class
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(0); // Reset to first page when searching
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setPage(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -153,16 +183,54 @@ const DataBrowser: React.FC = () => {
       {/* Class selector and filters */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} md={3}>
             <ClassSelector
               classes={classes}
               selectedClass={selectedClass}
               onSelectClass={handleClassChange}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={8}>
+          <Grid item xs={12} sm={6} md={3}>
+            <ProjectSelector
+              selectedProjectId={selectedProjectId}
+              onProjectChange={(projectId) => {
+                setSelectedProjectId(projectId);
+                setPage(0); // Reset to first page when project changes
+              }}
+              showAllOption={true}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search objects..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={handleClearSearch}
+                      edge="end"
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
             <Typography variant="body2" color="text.secondary">
-              {total} objects found in {selectedClass}
+              {total} object{total !== 1 ? 's' : ''} found
+              {searchTerm && ` matching "${searchTerm}"`}
             </Typography>
           </Grid>
         </Grid>

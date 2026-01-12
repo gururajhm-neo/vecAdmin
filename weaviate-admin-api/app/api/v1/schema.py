@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Optional
 from app.models.schema import SchemaResponse, ClassSchema
 from app.services.weaviate_service import weaviate_service
 from app.middleware.auth import get_current_user
@@ -7,12 +8,24 @@ router = APIRouter()
 
 
 @router.get("", response_model=SchemaResponse)
-async def get_schema(current_user: dict = Depends(get_current_user)):
+async def get_schema(
+    project_id: Optional[int] = Query(None, description="Filter by project_id. If not provided, uses user's project_id from token."),
+    current_user: dict = Depends(get_current_user)
+):
     """
     Get Weaviate schema with all classes.
     Requires authentication.
+    
+    Query Parameters:
+    - project_id: Optional. If provided, filters object counts by this project_id.
+                   If not provided, uses project_id from user's token.
+                   If neither exists, shows all data.
     """
     try:
+        # Use project_id from query parameter if provided, otherwise from token
+        if project_id is None:
+            project_id = current_user.get("project_id")
+        
         schema = weaviate_service.get_schema()
         
         if "error" in schema:
@@ -22,8 +35,8 @@ async def get_schema(current_user: dict = Depends(get_current_user)):
         
         if "classes" in schema:
             for class_obj in schema["classes"]:
-                # Get object count for this class
-                count = weaviate_service.count_objects(class_obj["class"])
+                # Get object count for this class (filtered by project_id if provided)
+                count = weaviate_service.count_objects(class_obj["class"], project_id=project_id)
                 
                 # Extract vector config if available
                 vector_config = None
@@ -55,20 +68,30 @@ async def get_schema(current_user: dict = Depends(get_current_user)):
 @router.get("/{class_name}", response_model=ClassSchema)
 async def get_class_schema(
     class_name: str,
+    project_id: Optional[int] = Query(None, description="Filter by project_id. If not provided, uses user's project_id from token."),
     current_user: dict = Depends(get_current_user)
 ):
     """
     Get specific class schema.
     Requires authentication.
+    
+    Query Parameters:
+    - project_id: Optional. If provided, filters object count by this project_id.
+                   If not provided, uses project_id from user's token.
+                   If neither exists, shows all data.
     """
     try:
+        # Use project_id from query parameter if provided, otherwise from token
+        if project_id is None:
+            project_id = current_user.get("project_id")
+        
         class_schema = weaviate_service.get_class_schema(class_name)
         
         if class_schema is None:
             raise HTTPException(status_code=404, detail=f"Class '{class_name}' not found")
         
-        # Get object count
-        count = weaviate_service.count_objects(class_name)
+        # Get object count (filtered by project_id if provided)
+        count = weaviate_service.count_objects(class_name, project_id=project_id)
         
         # Extract vector config
         vector_config = None

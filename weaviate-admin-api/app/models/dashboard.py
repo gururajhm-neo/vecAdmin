@@ -24,4 +24,5 @@ class DashboardOverview(BaseModel):
     total_objects: int
     version: Optional[str] = None
     hostname: Optional[str] = None
+    project_id: Optional[int] = None  # User's project ID for filtering
 

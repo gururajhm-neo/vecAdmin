@@ -2,17 +2,21 @@ import apiClient from './client';
 import { ObjectListResponse, SimilarObjectsResponse } from '../types';
 
 /**
- * Get objects from a class with pagination
+ * Get objects from a class with pagination and optional search
  */
 export const getObjects = async (
   className: string,
   limit: number = 50,
   offset: number = 0,
-  search?: string
+  search?: string,
+  projectId?: number | 'all' | null
 ): Promise<ObjectListResponse> => {
   const params: any = { limit, offset };
-  if (search) {
-    params.search = search;
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
+  if (projectId && projectId !== 'all') {
+    params.project_id = projectId;
   }
   
   const response = await apiClient.get<ObjectListResponse>(

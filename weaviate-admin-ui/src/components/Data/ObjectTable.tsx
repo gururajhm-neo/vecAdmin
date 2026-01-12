@@ -41,6 +41,15 @@ const ObjectTable: React.FC<ObjectTableProps> = ({
   const getPropertyKeys = (): string[] => {
     if (objects.length === 0) return [];
     const keys = Object.keys(objects[0]).filter((key) => key !== '_additional');
+    
+    // Prioritize project_id - show it first if it exists
+    const projectIdIndex = keys.indexOf('project_id');
+    if (projectIdIndex !== -1) {
+      // Move project_id to front
+      const otherKeys = keys.filter(k => k !== 'project_id');
+      return ['project_id', ...otherKeys.slice(0, 3)];
+    }
+    
     return keys.slice(0, 4); // Show first 4 properties
   };
 
@@ -84,9 +93,21 @@ const ObjectTable: React.FC<ObjectTableProps> = ({
                       <span>{truncateUUID(obj._additional?.id || '')}</span>
                     </Tooltip>
                   </TableCell>
-                  {propertyKeys.map((key) => (
-                    <TableCell key={key}>{renderCellValue(obj[key])}</TableCell>
-                  ))}
+                  {propertyKeys.map((key) => {
+                    const isProjectId = key === 'project_id';
+                    return (
+                      <TableCell 
+                        key={key}
+                        sx={isProjectId ? { 
+                          fontWeight: 'bold', 
+                          color: 'primary.main',
+                          bgcolor: 'primary.50'
+                        } : {}}
+                      >
+                        {renderCellValue(obj[key])}
+                      </TableCell>
+                    );
+                  })}
                   <TableCell>
                     {obj._additional?.creationTimeUnix
                       ? formatDate(obj._additional.creationTimeUnix)

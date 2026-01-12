@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class LoginRequest(BaseModel):
@@ -17,4 +18,5 @@ class UserResponse(BaseModel):
     """User information response."""
     email: str
     name: str
+    project_id: Optional[int] = None
 

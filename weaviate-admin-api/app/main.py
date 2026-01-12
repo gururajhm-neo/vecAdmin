@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api.v1 import auth, dashboard, schema, data, query
+from app.api.v1 import auth, dashboard, schema, data, query, projects
 
 # Create FastAPI application
 app = FastAPI(
@@ -27,6 +27,7 @@ app.include_router(dashboard.router, prefix=f"{settings.API_V1_PREFIX}/dashboard
 app.include_router(schema.router, prefix=f"{settings.API_V1_PREFIX}/schema", tags=["Schema"])
 app.include_router(data.router, prefix=f"{settings.API_V1_PREFIX}/data", tags=["Data"])
 app.include_router(query.router, prefix=f"{settings.API_V1_PREFIX}/query", tags=["Query"])
+app.include_router(projects.router, prefix=f"{settings.API_V1_PREFIX}/projects", tags=["Projects"])
 
 
 @app.get("/")

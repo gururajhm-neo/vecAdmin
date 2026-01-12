@@ -7,6 +7,7 @@ import {
   CardContent,
   IconButton,
   Tooltip,
+  Paper,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { getDashboardOverview } from '../api/dashboard';
@@ -16,14 +17,20 @@ import ErrorMessage from '../components/Common/ErrorMessage';
 import HealthCard from '../components/Dashboard/HealthCard';
 import ObjectCountCard from '../components/Dashboard/ObjectCountCard';
 import MemoryCard from '../components/Dashboard/MemoryCard';
+import ProjectSelector from '../components/Common/ProjectSelector';
 import { DASHBOARD_REFRESH_INTERVAL } from '../utils/constants';
 import { formatNumber } from '../utils/formatters';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | 'all' | null>(
+    user?.project_id || 'all'
+  );
 
   const fetchData = async (isRefresh: boolean = false) => {
     if (isRefresh) {
@@ -34,7 +41,7 @@ const Dashboard: React.FC = () => {
     setError(null);
 
     try {
-      const result = await getDashboardOverview();
+      const result = await getDashboardOverview(selectedProjectId);
       setData(result);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch dashboard data');
@@ -53,7 +60,11 @@ const Dashboard: React.FC = () => {
     }, DASHBOARD_REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedProjectId]);
+
+  const handleProjectChange = (projectId: number | 'all' | null) => {
+    setSelectedProjectId(projectId);
+  };
 
   const handleRefresh = () => {
     fetchData(true);
@@ -74,15 +85,38 @@ const Dashboard: React.FC = () => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Dashboard
-        </Typography>
-        <Tooltip title="Refresh">
-          <IconButton onClick={handleRefresh} disabled={refreshing}>
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography variant="h4" component="h1">
+              Dashboard
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {selectedProjectId === 'all' 
+                ? 'Showing data for all projects' 
+                : `Showing data for Project ID: ${selectedProjectId}`}
+            </Typography>
+          </Box>
+          <Tooltip title="Refresh">
+            <IconButton onClick={handleRefresh} disabled={refreshing}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <Paper sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" sx={{ minWidth: 100 }}>
+              Filter by Project:
+            </Typography>
+            <Box sx={{ minWidth: 200 }}>
+              <ProjectSelector
+                selectedProjectId={selectedProjectId}
+                onProjectChange={handleProjectChange}
+                showAllOption={true}
+              />
+            </Box>
+          </Box>
+        </Paper>
       </Box>
 
       {/* Main Grid */}

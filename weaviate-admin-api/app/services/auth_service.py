@@ -4,9 +4,23 @@ from typing import Optional, Dict
 from app.config import settings
 
 # Hardcoded test users for MVP
+# Each user is mapped to a project_id (customer identifier) and optionally org_id (organization identifier)
+# org_id provides additional isolation layer - if two organizations have same project_id, they won't see each other's data
 TEST_USERS = [
-    {"email": "engineer1@testneo.ai", "password": "admin123", "name": "Engineer 1"},
-    {"email": "engineer2@testneo.ai", "password": "admin123", "name": "Engineer 2"}
+    {
+        "email": "engineer1@testneo.ai", 
+        "password": "admin123", 
+        "name": "Engineer 1",
+        "project_id": 21,  # Map to project_id from Weaviate
+        "org_id": None  # Optional: organization identifier for multi-tenant isolation
+    },
+    {
+        "email": "engineer2@testneo.ai", 
+        "password": "admin123", 
+        "name": "Engineer 2",
+        "project_id": 21,  # Can be same or different project
+        "org_id": None  # Optional: organization identifier for multi-tenant isolation
+    }
 ]
 
 
@@ -14,10 +28,16 @@ def authenticate_user(email: str, password: str) -> Optional[Dict]:
     """
     Authenticate user with email and password.
     Returns user dict if valid, None otherwise.
+    Includes project_id and org_id for data isolation.
     """
     for user in TEST_USERS:
         if user["email"] == email and user["password"] == password:
-            return {"email": user["email"], "name": user["name"]}
+            return {
+                "email": user["email"], 
+                "name": user["name"],
+                "project_id": user.get("project_id"),
+                "org_id": user.get("org_id")  # Organization identifier for multi-tenant isolation
+            }
     return None
 
 
@@ -31,6 +51,8 @@ def create_access_token(user: Dict) -> str:
     payload = {
         "email": user["email"],
         "name": user["name"],
+        "project_id": user.get("project_id"),  # Include project_id in token
+        "org_id": user.get("org_id"),  # Include org_id in token for multi-tenant isolation
         "exp": expire
     }
     
