@@ -62,12 +62,13 @@ async def get_dashboard_overview(
                 class_name = class_obj["class"]
                 try:
                     count = weaviate_service.count_objects(class_name, project_id=project_id)
-                    object_counts[class_name] = count
-                    total_objects += count
+                    # Only include classes with data (skip empty classes)
+                    if count > 0:
+                        object_counts[class_name] = count
+                        total_objects += count
                     print(f"[DEBUG] {class_name}: {count} objects (project_id={project_id})")
                 except Exception as e:
                     print(f"[ERROR] Failed to count {class_name}: {str(e)}")
-                    object_counts[class_name] = 0
         
         # Get memory stats
         memory_stats = get_memory_stats(nodes_status)
