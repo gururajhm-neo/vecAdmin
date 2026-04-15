@@ -6,28 +6,22 @@ def is_read_only_query(query: str) -> bool:
     """
     Validate that GraphQL query is read-only (no mutations).
     Returns True if query is safe to execute.
+    Uses word-boundary matching so field names like _additional are not
+    mistakenly flagged by the substring 'add'.
     """
-    # Convert to lowercase for checking
     query_lower = query.lower()
-    
-    # Check for mutation keywords
-    mutation_keywords = [
-        "mutation",
-        "delete",
-        "create",
-        "update",
-        "add",
-        "remove"
-    ]
-    
-    for keyword in mutation_keywords:
-        if keyword in query_lower:
-            return False
-    
-    # Check for allowed read operations
+
+    # Match whole words only (e.g. "add" must not be inside "_additional")
+    mutation_pattern = re.compile(
+        r'\b(mutation|delete|create|update|remove)\b'
+    )
+    if mutation_pattern.search(query_lower):
+        return False
+
+    # Must contain at least one recognised read root operation
     read_keywords = ["get", "aggregate", "explore"]
     has_read_operation = any(keyword in query_lower for keyword in read_keywords)
-    
+
     return has_read_operation
 
 

@@ -8,14 +8,14 @@ DEFAULT_DEMO_USERS: List[Dict[str, Any]] = [
         "email": "engineer1@example.com",
         "password": "admin123",
         "name": "Engineer 1",
-        "project_id": 21,
+        "project_id": None,   # None = no filter, show all data (override via AUTH_USERS_JSON)
         "org_id": None,
     },
     {
         "email": "engineer2@example.com",
         "password": "admin123",
         "name": "Engineer 2",
-        "project_id": 21,
+        "project_id": None,   # None = no filter, show all data
         "org_id": None,
     },
 ]
