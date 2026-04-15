@@ -164,6 +164,16 @@ class QdrantProvider(VectorDBProvider):
             ]
         )
 
+    @staticmethod
+    def _parse_point_id(id_str: str):
+        """Return int if the ID is a numeric string, else return as-is (UUID).
+        Qdrant only accepts unsigned int or UUID — never a bare numeric string.
+        """
+        try:
+            return int(id_str)
+        except (ValueError, TypeError):
+            return id_str
+
     def _point_to_object(self, point: Any) -> Dict[str, Any]:
         """Normalise a Qdrant ScoredPoint / Record to the shared object shape."""
         payload = dict(getattr(point, "payload", {}) or {})
@@ -221,9 +231,10 @@ class QdrantProvider(VectorDBProvider):
         if class_name is None:
             return None
         try:
+            point_id = self._parse_point_id(uuid)
             results = self._client.retrieve(
                 collection_name=class_name,
-                ids=[uuid],
+                ids=[point_id],
                 with_payload=True,
                 with_vectors=True,
             )
@@ -248,9 +259,10 @@ class QdrantProvider(VectorDBProvider):
     ) -> Dict[str, Any]:
         try:
             # Step 1: retrieve source vector
+            point_id = self._parse_point_id(object_id)
             src = self._client.retrieve(
                 collection_name=class_name,
-                ids=[object_id],
+                ids=[point_id],
                 with_vectors=True,
             )
             if not src:
