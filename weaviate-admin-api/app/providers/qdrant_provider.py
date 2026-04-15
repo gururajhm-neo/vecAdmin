@@ -8,6 +8,7 @@ so the existing REST routes and React UI work without modification.
 """
 
 import json
+import urllib.request
 from typing import Any, Dict, List, Optional
 
 from app.config import settings
@@ -246,7 +247,13 @@ class QdrantProvider(VectorDBProvider):
             payload["vector"] = getattr(pt, "vector", None)
             payload["class"] = class_name
             return payload
-        except Exception:
+        except Exception as exc:
+            # Log and return None so the route layer can surface a clean 404
+            import logging
+            logging.getLogger(__name__).warning(
+                "Qdrant get_object failed for id=%s collection=%s: %s",
+                uuid, class_name, exc,
+            )
             return None
 
     def find_similar(
@@ -271,22 +278,46 @@ class QdrantProvider(VectorDBProvider):
             if vector is None:
                 return {"error": "Source object has no vector stored"}
 
-            # Step 2: nearest-neighbour search
-            # NOTE: qdrant-client >= 1.13 removed search(); use query_points()
+            # Step 2: nearest-neighbour search via stable REST /points/search
+            # (query_points() requires Qdrant server >=1.10; /points/search works
+            # on all versions including 1.9.x)
             filt = self._scope_filter(project_id)
-            result = self._client.query_points(
-                collection_name=class_name,
-                query=vector,
-                query_filter=filt,
-                limit=limit + 1,  # +1 to exclude the source itself
-                with_payload=True,
-                with_vectors=False,
+            scheme = "https" if settings.QDRANT_HTTPS else "http"
+            url = (
+                f"{scheme}://{settings.QDRANT_HOST}:{settings.QDRANT_PORT}"
+                f"/collections/{class_name}/points/search"
             )
-            objects = [
-                self._point_to_object(h)
-                for h in result.points
-                if str(h.id) != str(object_id)
-            ][:limit]
+            body: Dict[str, Any] = {
+                "vector": vector if isinstance(vector, list) else list(vector),
+                "limit": limit + 1,
+                "with_payload": True,
+            }
+            if filt is not None:
+                body["filter"] = json.loads(filt.json())
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(body).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                raw = json.loads(resp.read())
+            hits = raw.get("result", [])
+
+            # Normalise to shared object shape
+            objects = []
+            for h in hits:
+                if str(h.get("id")) == str(object_id):
+                    continue
+                payload = dict(h.get("payload") or {})
+                payload["_additional"] = {
+                    "id": str(h.get("id", "")),
+                    "distance": h.get("score"),
+                    "creationTimeUnix": 0,
+                }
+                objects.append(payload)
+                if len(objects) >= limit:
+                    break
             return {"data": {"Get": {class_name: objects}}}
         except Exception as exc:
             return {"error": str(exc)}
