@@ -2,21 +2,12 @@
 Project metadata service - maps project_id to project names and handles organization isolation.
 """
 from typing import Dict, Optional, List, Any
+from app.config import settings
 
-# Project metadata mapping
-# In production, this should come from a database or external service
+# Project metadata mapping loaded from environment.
+# In production, this should come from a database or external service.
 # Format: {project_id: {"name": "Project Name", "org_id": org_id}}
-# These are the actual project IDs found in your Weaviate instance
-PROJECT_METADATA: Dict[int, Dict[str, Any]] = {
-    1: {"name": "Project 1", "org_id": None},
-    9: {"name": "Project 9", "org_id": None},
-    10: {"name": "Project 10", "org_id": None},
-    21: {"name": "Project 21 (Main)", "org_id": None},  # Has most data
-    22: {"name": "Project 22", "org_id": None},
-    23: {"name": "Project 23", "org_id": None},
-    24: {"name": "Project 24", "org_id": None},
-    999: {"name": "Test Project", "org_id": None},  # May not have data
-}
+PROJECT_METADATA: Dict[int, Dict[str, Any]] = settings.project_metadata
 
 # Organization metadata (for future multi-tenant support)
 # Format: {org_id: {"name": "Organization Name"}}
@@ -29,8 +20,8 @@ def get_project_name(project_id: int) -> str:
     Returns project name if found, otherwise returns "Project {project_id}".
     """
     if project_id in PROJECT_METADATA:
-        return PROJECT_METADATA[project_id].get("name", f"Project {project_id}")
-    return f"Project {project_id}"
+        return PROJECT_METADATA[project_id].get("name", f"Scope {project_id}")
+    return f"Scope {project_id}"
 
 
 def get_project_org_id(project_id: int) -> Optional[int]:

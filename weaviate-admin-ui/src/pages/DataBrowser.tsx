@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -47,19 +47,7 @@ const DataBrowser: React.FC = () => {
   const [showingSimilar, setShowingSimilar] = useState(false);
   const [similarObjects, setSimilarObjects] = useState<WeaviateObject[]>([]);
 
-  // Fetch classes on mount
-  useEffect(() => {
-    fetchClasses();
-  }, []);
-
-  // Fetch objects when class, pagination, search, or project changes
-  useEffect(() => {
-    if (selectedClass) {
-      fetchObjects();
-    }
-  }, [selectedClass, page, rowsPerPage, searchTerm, selectedProjectId]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const result = await getSchema();
       const classNames = result.classes.map((cls) => cls.name);
@@ -73,9 +61,9 @@ const DataBrowser: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchObjects = async () => {
+  const fetchObjects = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -94,7 +82,19 @@ const DataBrowser: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, searchTerm, selectedClass, selectedProjectId]);
+
+  // Fetch classes on mount
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
+
+  // Fetch objects when class, pagination, search, or project changes
+  useEffect(() => {
+    if (selectedClass) {
+      fetchObjects();
+    }
+  }, [fetchObjects, selectedClass]);
 
   const handleClassChange = (className: string) => {
     setSelectedClass(className);

@@ -7,7 +7,7 @@
 - [x] Generate JWT token on successful login
 - [x] Store token in localStorage
 - [x] Hardcoded 2 test users in backend
-- [x] Clean, centered design with TestNeo branding
+- [x] Clean, centered design with configurable organization branding
 - [x] Gradient background
 - [x] Error message display
 - [x] Test credentials hint displayed
@@ -133,7 +133,7 @@
   - [x] Collapsible (hamburger menu on mobile)
   - [x] **NEW: Collapsible on desktop (toggle button)**
 - [x] Top Bar:
-  - [x] Left: TestNeo logo + "Weaviate Admin" title
+  - [x] Left: configurable organization label + "Weaviate Admin" title
   - [x] Right:
     - [x] User name display
     - [x] Logout button

@@ -20,6 +20,25 @@ class WeaviateService:
             self._connection_error = str(e)
             print(f"Warning: Could not connect to Weaviate at {settings.WEAVIATE_URL}: {e}")
             print("The API will start but Weaviate operations will fail.")
+
+    def _build_scope_filter(self, scope_value: Optional[int]) -> str:
+        """Build GraphQL filter for configured scope field."""
+        if scope_value is None:
+            return ""
+        value_operator = "valueInt"
+        if settings.SCOPE_FIELD_VALUE_TYPE.lower() == "string":
+            value_operator = "valueString"
+            scope_literal = f'"{scope_value}"'
+        else:
+            scope_literal = str(scope_value)
+
+        return f'''
+        {{
+            path: ["{settings.SCOPE_FIELD_NAME}"]
+            operator: Equal
+            {value_operator}: {scope_literal}
+        }}
+        '''
     
     @property
     def client(self):
@@ -74,14 +93,14 @@ class WeaviateService:
             return None
     
     def count_objects(self, class_name: str, project_id: Optional[int] = None) -> int:
-        """Count objects in a class, optionally filtered by project_id."""
+        """Count objects in a class, optionally filtered by configured scope field."""
         where_clause = ""
-        if project_id is not None:
+        scope_filter = self._build_scope_filter(project_id)
+        if scope_filter:
             where_clause = f'''
             where: {{
-                path: ["project_id"]
-                operator: Equal
-                valueInt: {project_id}
+                operator: And
+                operands: [{scope_filter}]
             }}
             '''
         
@@ -117,7 +136,7 @@ class WeaviateService:
         search_text: Optional[str] = None,
         project_id: Optional[int] = None
     ) -> Dict:
-        """Query objects with pagination, search, and project_id filtering."""
+        """Query objects with pagination, search, and scope filtering."""
         if properties is None:
             properties = ["_additional { id }"]
         
@@ -126,15 +145,10 @@ class WeaviateService:
         # Build where clause conditions
         where_conditions = []
         
-        # Filter by project_id if provided (customer/organization filter)
-        if project_id is not None:
-            where_conditions.append(f'''
-            {{
-                path: ["project_id"]
-                operator: Equal
-                valueInt: {project_id}
-            }}
-            ''')
+        # Filter by configured scope field if provided
+        scope_filter = self._build_scope_filter(project_id)
+        if scope_filter:
+            where_conditions.append(scope_filter)
         
         # Add search filter if provided
         if search_text and search_text.strip():
@@ -187,20 +201,20 @@ class WeaviateService:
         properties: Optional[List[str]] = None,
         project_id: Optional[int] = None
     ) -> Dict:
-        """Find similar objects using nearObject, optionally filtered by project_id."""
+        """Find similar objects using nearObject, optionally filtered by scope."""
         if properties is None:
             properties = ["_additional { id distance }"]
         
         props_str = " ".join(properties)
         
-        # Add project_id filter if provided
+        # Add configured scope filter if provided
         where_clause = ""
-        if project_id is not None:
+        scope_filter = self._build_scope_filter(project_id)
+        if scope_filter:
             where_clause = f'''
             where: {{
-                path: ["project_id"]
-                operator: Equal
-                valueInt: {project_id}
+                operator: And
+                operands: [{scope_filter}]
             }}
             '''
         

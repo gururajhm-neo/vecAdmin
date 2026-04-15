@@ -496,5 +496,5 @@ sudo systemctl reload nginx
 
 ---
 
-**For questions or issues, contact the TestNeo DevOps team.**
+**For questions or issues, open a repository issue or discussion thread.**
 

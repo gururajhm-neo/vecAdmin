@@ -14,6 +14,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { APP_ORGANIZATION_NAME, APP_TITLE } from '../../utils/constants';
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -66,7 +67,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
           component="div"
           sx={{ flexGrow: 0, mr: 2, fontWeight: 'bold' }}
         >
-          TestNeo
+          {APP_ORGANIZATION_NAME}
         </Typography>
 
         <Typography
@@ -75,7 +76,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
           component="div"
           sx={{ flexGrow: 1, opacity: 0.9 }}
         >
-          Weaviate Admin
+          {APP_TITLE}
         </Typography>
 
         {/* Right side */}

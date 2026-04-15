@@ -45,7 +45,7 @@ We've included a `docker-compose.yml` file in the root directory.
 
 ### Start Weaviate:
 ```bash
-cd /Users/gururajhm/Documents/weaviate-testneo
+cd /path/to/your/weaviate-admin-repo
 docker-compose up -d weaviate
 ```
 

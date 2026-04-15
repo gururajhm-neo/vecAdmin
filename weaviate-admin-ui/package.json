@@ -2,7 +2,7 @@
   "name": "weaviate-admin-ui",
   "version": "1.0.0",
   "private": true,
-  "description": "Internal Admin Dashboard for Weaviate - TestNeo",
+  "description": "Open-source admin dashboard for Weaviate",
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -17,6 +17,7 @@
     "typescript": "^4.9.5"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18"
@@ -45,4 +46,3 @@
     ]
   }
 }
-

@@ -125,7 +125,7 @@ Projects now have friendly names displayed in the UI:
 PROJECT_METADATA = {
     1: {"name": "Default Project", "org_id": None},
     9: {"name": "Customer A - Project Alpha", "org_id": None},
-    21: {"name": "TestNeo Main Project", "org_id": None},
+    21: {"name": "Main Project", "org_id": None},
     24: {"name": "Customer B - Project Beta", "org_id": None},
     999: {"name": "Test Project", "org_id": None},
 }
@@ -133,7 +133,7 @@ PROJECT_METADATA = {
 
 **UI Display:**
 - Before: "Project ID: 21"
-- After: "ID: 21 - TestNeo Main Project"
+- After: "ID: 21 - Main Project"
 
 ## Migration Path
 

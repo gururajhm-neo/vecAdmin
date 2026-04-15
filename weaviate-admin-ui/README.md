@@ -1,6 +1,6 @@
 # Weaviate Admin UI
 
-Frontend dashboard for managing and monitoring Weaviate vector database - Internal tool for TestNeo.
+Frontend dashboard for managing and monitoring Weaviate vector databases.
 
 ## Overview
 
@@ -106,8 +106,8 @@ weaviate-admin-ui/
 - Simple email/password authentication
 - JWT token management
 - Test credentials:
-  - engineer1@testneo.ai / admin123
-  - engineer2@testneo.ai / admin123
+  - engineer1@example.com / admin123
+  - engineer2@example.com / admin123
 
 ### 2. Dashboard
 - Real-time Weaviate health status
@@ -182,7 +182,7 @@ scp -r build/* user@server:/var/www/weaviate-admin/
 ```nginx
 server {
     listen 80;
-    server_name weaviate-admin.testneo.ai;
+    server_name weaviate-admin.example.com;
     root /var/www/weaviate-admin;
     index index.html;
 
@@ -248,5 +248,5 @@ If login fails:
 
 ## License
 
-Internal tool for TestNeo - Not for external distribution.
+Open-source project. Add your preferred license file before public distribution.
 

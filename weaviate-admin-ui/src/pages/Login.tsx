@@ -11,6 +11,12 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  APP_DESCRIPTION,
+  APP_ORGANIZATION_NAME,
+  APP_TITLE,
+  DEMO_CREDENTIALS,
+} from '../utils/constants';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -74,7 +80,7 @@ const Login: React.FC = () => {
               mb: 1,
             }}
           >
-            TestNeo
+            {APP_ORGANIZATION_NAME}
           </Typography>
           
           <Typography
@@ -86,7 +92,7 @@ const Login: React.FC = () => {
               mb: 3,
             }}
           >
-            Weaviate Admin
+            {APP_TITLE}
           </Typography>
 
           <Typography
@@ -95,7 +101,7 @@ const Login: React.FC = () => {
             align="center"
             sx={{ mb: 3 }}
           >
-            Internal tool for monitoring and managing Weaviate
+            {APP_DESCRIPTION}
           </Typography>
 
           {/* Error message */}
@@ -151,10 +157,10 @@ const Login: React.FC = () => {
                 <strong>Test Credentials:</strong>
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block">
-                engineer1@testneo.ai / admin123
+                {DEMO_CREDENTIALS[0].email} / {DEMO_CREDENTIALS[0].password}
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block">
-                engineer2@testneo.ai / admin123
+                {DEMO_CREDENTIALS[1].email} / {DEMO_CREDENTIALS[1].password}
               </Typography>
             </Box>
           </Box>

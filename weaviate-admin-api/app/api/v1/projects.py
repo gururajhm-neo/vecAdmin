@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 from typing import List, Dict
+from app.config import settings
 from app.services.weaviate_service import weaviate_service
-from app.services.project_service import get_all_projects_with_metadata, get_project_name
+from app.services.project_service import get_project_name
 from app.middleware.auth import get_current_user
 
 router = APIRouter()
@@ -10,8 +11,8 @@ router = APIRouter()
 @router.get("/available")
 async def get_available_projects(current_user: dict = Depends(get_current_user)):
     """
-    Get list of all project_ids available in Weaviate.
-    Uses GraphQL Aggregate to efficiently get unique project_ids across all classes.
+    Get list of all scope IDs available in Weaviate.
+    Uses GraphQL Aggregate to efficiently get unique values across all classes.
     """
     try:
         # Get schema to find all classes
@@ -22,14 +23,14 @@ async def get_available_projects(current_user: dict = Depends(get_current_user))
         
         project_ids = set()
         
-        # Query each class using Aggregate to get unique project_ids
+        # Query each class using Aggregate to get unique scope IDs
         if "classes" in schema:
             for class_obj in schema["classes"]:
                 class_name = class_obj["class"]
                 
-                # Check if class has project_id property
+                # Check if class has configured scope property
                 has_project_id = any(
-                    prop.get("name") == "project_id" 
+                    prop.get("name") == settings.SCOPE_FIELD_NAME
                     for prop in class_obj.get("properties", [])
                 )
                 
@@ -37,11 +38,11 @@ async def get_available_projects(current_user: dict = Depends(get_current_user))
                     continue
                 
                 try:
-                    # Use Aggregate with groupBy to get unique project_id values
+                    # Use Aggregate with groupBy to get unique scope values
                     query = f"""
                     {{
                         Aggregate {{
-                            {class_name}(groupBy: ["project_id"]) {{
+                            {class_name}(groupBy: ["{settings.SCOPE_FIELD_NAME}"]) {{
                                 groupedBy {{
                                     value
                                 }}
@@ -58,13 +59,11 @@ async def get_available_projects(current_user: dict = Depends(get_current_user))
                             if "groupedBy" in item and "value" in item["groupedBy"]:
                                 project_id_value = item["groupedBy"]["value"]
                                 if project_id_value is not None:
-                                    # Convert to int if it's a string
                                     try:
                                         project_id_int = int(project_id_value)
                                         project_ids.add(project_id_int)
                                     except (ValueError, TypeError):
-                                        # If conversion fails, skip it
-                                        print(f"[WARN] Could not convert project_id '{project_id_value}' to int for class {class_name}")
+                                        print(f"[WARN] Could not convert {settings.SCOPE_FIELD_NAME} '{project_id_value}' to int for class {class_name}")
                     elif "errors" in result:
                         print(f"[ERROR] GraphQL errors for {class_name}: {result['errors']}")
                 except Exception as e:
@@ -72,7 +71,7 @@ async def get_available_projects(current_user: dict = Depends(get_current_user))
                     # Continue with other classes even if one fails
         
         projects_list = sorted(list(project_ids))
-        print(f"[DEBUG] Found {len(projects_list)} unique project_ids: {projects_list}")
+        print(f"[DEBUG] Found {len(projects_list)} unique {settings.SCOPE_FIELD_NAME} values: {projects_list}")
         
         # Enrich with project names from metadata
         projects_with_metadata = []

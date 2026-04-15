@@ -10,10 +10,6 @@ router = APIRouter()
 async def login(request: LoginRequest):
     """
     Authenticate user and return JWT token.
-    
-    Test credentials:
-    - engineer1@testneo.ai / admin123
-    - engineer2@testneo.ai / admin123
     """
     user = authenticate_user(request.email, request.password)
     

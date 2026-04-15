@@ -1,6 +1,6 @@
 # Weaviate Admin API
 
-Backend API for the Weaviate Admin Dashboard - Internal tool for TestNeo.
+Backend API for the Weaviate Admin Dashboard.
 
 ## Overview
 
@@ -110,8 +110,8 @@ Authorization: Bearer <your-token-here>
 
 For MVP, two test users are hardcoded:
 
-- Email: `engineer1@testneo.ai`, Password: `admin123`
-- Email: `engineer2@testneo.ai`, Password: `admin123`
+- Email: `engineer1@example.com`, Password: `admin123`
+- Email: `engineer2@example.com`, Password: `admin123`
 
 ## Project Structure
 
@@ -184,7 +184,7 @@ sudo systemctl status weaviate-admin-api
 ```nginx
 server {
     listen 80;
-    server_name api.weaviate-admin.testneo.ai;
+    server_name api.weaviate-admin.example.com;
 
     location / {
         proxy_pass http://localhost:8000;
@@ -205,7 +205,7 @@ Use the interactive docs at http://localhost:8000/docs to test endpoints, or use
 # Login
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "engineer1@testneo.ai", "password": "admin123"}'
+  -d '{"email": "engineer1@example.com", "password": "admin123"}'
 
 # Get dashboard (with token)
 curl -X GET http://localhost:8000/api/v1/dashboard/overview \
@@ -221,5 +221,5 @@ curl -X GET http://localhost:8000/api/v1/dashboard/overview \
 
 ## License
 
-Internal tool for TestNeo - Not for external distribution.
+Open-source project. Add your preferred license file before public distribution.
 

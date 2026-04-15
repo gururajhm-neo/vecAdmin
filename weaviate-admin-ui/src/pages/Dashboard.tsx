@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
     user?.project_id || 'all'
   );
 
-  const fetchData = async (isRefresh: boolean = false) => {
+  const fetchData = useCallback(async (isRefresh: boolean = false) => {
     if (isRefresh) {
       setRefreshing(true);
     } else {
@@ -49,7 +49,7 @@ const Dashboard: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [selectedProjectId]);
 
   useEffect(() => {
     fetchData();
@@ -60,7 +60,7 @@ const Dashboard: React.FC = () => {
     }, DASHBOARD_REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [selectedProjectId]);
+  }, [fetchData]);
 
   const handleProjectChange = (projectId: number | 'all' | null) => {
     setSelectedProjectId(projectId);

@@ -89,6 +89,11 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
 CORS_ORIGINS=http://localhost:3000
 API_V1_PREFIX=/api/v1
+APP_NAME=Weaviate Admin API
+APP_DESCRIPTION=API for the Weaviate Admin Dashboard
+APP_VERSION=1.0.0
+SCOPE_FIELD_NAME=project_id
+SCOPE_FIELD_VALUE_TYPE=int
 EOL
 fi
 
@@ -114,7 +119,16 @@ fi
 # Check if .env exists
 if [ ! -f ".env" ]; then
     echo -e "${YELLOW}Creating .env file...${NC}"
-    echo "REACT_APP_API_URL=http://localhost:8000/api/v1" > .env
+    cat > .env << 'EOL'
+REACT_APP_API_URL=http://localhost:8000/api/v1
+REACT_APP_ORGANIZATION_NAME=Your Organization
+REACT_APP_APP_TITLE=Weaviate Admin
+REACT_APP_APP_DESCRIPTION=Admin tool for monitoring and managing Weaviate
+REACT_APP_DEMO_USER_1_EMAIL=engineer1@example.com
+REACT_APP_DEMO_USER_1_PASSWORD=admin123
+REACT_APP_DEMO_USER_2_EMAIL=engineer2@example.com
+REACT_APP_DEMO_USER_2_PASSWORD=admin123
+EOL
 fi
 
 echo -e "${GREEN}✓ Frontend setup complete${NC}\n"
@@ -172,7 +186,7 @@ echo -e "  ${BLUE}Backend:${NC}   http://localhost:8000"
 echo -e "  ${BLUE}API Docs:${NC}  http://localhost:8000/docs"
 echo -e ""
 echo -e "${YELLOW}Test Credentials:${NC}"
-echo -e "  Email: engineer1@testneo.ai"
+echo -e "  Email: engineer1@example.com"
 echo -e "  Password: admin123"
 echo -e ""
 echo -e "${YELLOW}Logs:${NC}"

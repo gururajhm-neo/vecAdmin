@@ -1,27 +1,29 @@
 import jwt
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Any
 from app.config import settings
 
-# Hardcoded test users for MVP
-# Each user is mapped to a project_id (customer identifier) and optionally org_id (organization identifier)
-# org_id provides additional isolation layer - if two organizations have same project_id, they won't see each other's data
-TEST_USERS = [
+DEFAULT_DEMO_USERS: List[Dict[str, Any]] = [
     {
-        "email": "engineer1@testneo.ai", 
-        "password": "admin123", 
+        "email": "engineer1@example.com",
+        "password": "admin123",
         "name": "Engineer 1",
-        "project_id": 21,  # Map to project_id from Weaviate
-        "org_id": None  # Optional: organization identifier for multi-tenant isolation
+        "project_id": 21,
+        "org_id": None,
     },
     {
-        "email": "engineer2@testneo.ai", 
-        "password": "admin123", 
+        "email": "engineer2@example.com",
+        "password": "admin123",
         "name": "Engineer 2",
-        "project_id": 21,  # Can be same or different project
-        "org_id": None  # Optional: organization identifier for multi-tenant isolation
-    }
+        "project_id": 21,
+        "org_id": None,
+    },
 ]
+
+
+def _get_auth_users() -> List[Dict[str, Any]]:
+    """Resolve auth users from environment with safe fallback."""
+    return settings.auth_users or DEFAULT_DEMO_USERS
 
 
 def authenticate_user(email: str, password: str) -> Optional[Dict]:
@@ -30,13 +32,15 @@ def authenticate_user(email: str, password: str) -> Optional[Dict]:
     Returns user dict if valid, None otherwise.
     Includes project_id and org_id for data isolation.
     """
-    for user in TEST_USERS:
+    for user in _get_auth_users():
         if user["email"] == email and user["password"] == password:
+            scope_field_name = settings.SCOPE_FIELD_NAME
+            scope_value = user.get(scope_field_name, user.get("project_id"))
             return {
-                "email": user["email"], 
+                "email": user["email"],
                 "name": user["name"],
-                "project_id": user.get("project_id"),
-                "org_id": user.get("org_id")  # Organization identifier for multi-tenant isolation
+                "project_id": scope_value,
+                "org_id": user.get("org_id"),
             }
     return None
 

@@ -5,9 +5,9 @@ from app.api.v1 import auth, dashboard, schema, data, query, projects
 
 # Create FastAPI application
 app = FastAPI(
-    title="Weaviate Admin API",
-    description="Internal API for Weaviate Admin Dashboard - TestNeo",
-    version="1.0.0",
+    title=settings.APP_NAME,
+    description=settings.APP_DESCRIPTION,
+    version=settings.APP_VERSION,
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -34,8 +34,8 @@ app.include_router(projects.router, prefix=f"{settings.API_V1_PREFIX}/projects",
 async def root():
     """Root endpoint - health check."""
     return {
-        "name": "Weaviate Admin API",
-        "version": "1.0.0",
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
         "status": "healthy"
     }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Paper } from '@mui/material';
 import { getSchema } from '../api/schema';
 import { ClassSchema } from '../types';
@@ -20,11 +20,7 @@ const Schema: React.FC = () => {
     user?.project_id || 'all'
   );
 
-  useEffect(() => {
-    fetchSchema();
-  }, [selectedProjectId]);
-
-  const fetchSchema = async () => {
+  const fetchSchema = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -32,25 +28,26 @@ const Schema: React.FC = () => {
       const result = await getSchema(selectedProjectId);
       setClasses(result.classes);
       
-      // Auto-select first class if available and no class is selected
-      if (result.classes.length > 0 && !selectedClass) {
-        setSelectedClass(result.classes[0]);
-      } else if (result.classes.length > 0 && selectedClass) {
-        // If a class was selected, try to find it in the new list
-        const foundClass = result.classes.find(c => c.name === selectedClass.name);
-        if (foundClass) {
-          setSelectedClass(foundClass);
-        } else {
-          // If the previously selected class is not in the new list, select first one
-          setSelectedClass(result.classes[0]);
+      setSelectedClass((previousClass) => {
+        if (result.classes.length === 0) {
+          return null;
         }
-      }
+        if (!previousClass) {
+          return result.classes[0];
+        }
+        const foundClass = result.classes.find((c) => c.name === previousClass.name);
+        return foundClass || result.classes[0];
+      });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch schema');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    fetchSchema();
+  }, [fetchSchema]);
 
   const handleProjectChange = (projectId: number | 'all' | null) => {
     setSelectedProjectId(projectId);
