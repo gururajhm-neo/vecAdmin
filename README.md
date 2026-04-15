@@ -10,7 +10,9 @@
 
 ## 🎬 Live Demo
 
-> **[▶ Click here for screenshots & full UI walkthrough →](https://github.com/gururajhm-neo/vecAdmin/issues/1)**
+https://github.com/user-attachments/assets/7d11aa29-505c-4a8f-bc9d-b1cdcb88ee30
+
+> Full walkthrough: [screenshots & issue thread →](https://github.com/gururajhm-neo/vecAdmin/issues/1)
 
 No setup needed — run the mock mode locally in 30 seconds:
 
