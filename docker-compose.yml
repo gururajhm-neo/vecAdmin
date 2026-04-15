@@ -24,7 +24,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - WEAVIATE_URL=http://34.229.255.219:8080
+      - WEAVIATE_URL=${WEAVIATE_URL:-http://localhost:8080}
       - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
       - CORS_ORIGINS=http://localhost:3000
     depends_on:

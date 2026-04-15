@@ -5,36 +5,48 @@ from typing import Any, Dict, List
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
-    
-    # Weaviate Configuration
+
+    # ── Vector DB provider ────────────────────────────────────────────────────
+    # Which database to connect to. Supported: weaviate | qdrant | chroma
+    DB_PROVIDER: str = "weaviate"
+
+    # ── Weaviate ──────────────────────────────────────────────────────────────
     WEAVIATE_URL: str = "http://localhost:8080"
-    
-    # JWT Configuration
+
+    # ── Qdrant ────────────────────────────────────────────────────────────────
+    QDRANT_HOST:    str  = "localhost"
+    QDRANT_PORT:    int  = 6333
+    QDRANT_API_KEY: str  = ""
+    QDRANT_HTTPS:   bool = False
+
+    # ── ChromaDB ──────────────────────────────────────────────────────────────
+    CHROMA_HOST:     str = "localhost"
+    CHROMA_PORT:     int = 8000
+    CHROMA_TENANT:   str = "default_tenant"
+    CHROMA_DATABASE: str = "default_database"
+
+    # ── JWT ───────────────────────────────────────────────────────────────────
     JWT_SECRET: str = "your-secret-key-change-this-in-production"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
-    
-    # CORS Configuration
+
+    # ── CORS ──────────────────────────────────────────────────────────────────
     CORS_ORIGINS: str = "http://localhost:3000"
-    
-    # API Configuration
-    API_V1_PREFIX: str = "/api/v1"
-    APP_NAME: str = "Weaviate Admin API"
-    APP_DESCRIPTION: str = "API for the Weaviate Admin Dashboard"
-    APP_VERSION: str = "1.0.0"
 
-    # Data scoping configuration
-    SCOPE_FIELD_NAME: str = "project_id"
-    SCOPE_FIELD_VALUE_TYPE: str = "int"  # Supported values: int, string
+    # ── API meta ──────────────────────────────────────────────────────────────
+    API_V1_PREFIX:   str = "/api/v1"
+    APP_NAME:        str = "VecAdmin API"
+    APP_DESCRIPTION: str = "Multi-provider vector database admin API"
+    APP_VERSION:     str = "2.0.0"
 
-    # Optional auth bootstrap users as JSON string
-    # Example:
-    # [{"email":"admin@example.com","password":"admin123","name":"Admin","project_id":21}]
+    # ── Data scoping ──────────────────────────────────────────────────────────
+    SCOPE_FIELD_NAME:       str = "project_id"
+    SCOPE_FIELD_VALUE_TYPE: str = "int"   # int | string
+
+    # ── Optional bootstrap auth users (JSON array) ────────────────────────────
     AUTH_USERS_JSON: str = ""
 
-    # Optional metadata map for scope IDs as JSON object
-    # Example:
-    # {"21":{"name":"Main Project","org_id":null}}
+    # ── Optional project metadata (JSON object) ───────────────────────────────
     PROJECT_METADATA_JSON: str = ""
     
     @property

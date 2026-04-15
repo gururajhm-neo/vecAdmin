@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -19,6 +19,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useColorMode } from '../../contexts/ColorModeContext';
 import { useNavigate } from 'react-router-dom';
 import { APP_ORGANIZATION_NAME, APP_TITLE } from '../../utils/constants';
+import { getProviderInfo, ProviderInfo } from '../../api/provider';
+
+const PROVIDER_COLORS: Record<string, string> = {
+  Weaviate:  '#4CAF50',
+  Qdrant:    '#E91E8C',
+  ChromaDB:  '#FF6F00',
+};
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -30,18 +37,27 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
   const { user, logout } = useAuth();
   const { mode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
+  const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
+
+  useEffect(() => {
+    getProviderInfo()
+      .then(setProviderInfo)
+      .catch(() => setProviderInfo(null));
+  }, [user]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const providerColor = PROVIDER_COLORS[providerInfo?.provider ?? ''] ?? '#2196F3';
+  const providerLabel = providerInfo?.provider ?? null;
+  const providerReady = providerInfo?.ready ?? false;
+
   return (
     <AppBar
       position="fixed"
-      sx={{
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-      }}
+      sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
     >
       <Toolbar>
         {/* Mobile menu button */}
@@ -55,7 +71,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
           <MenuIcon />
         </IconButton>
 
-        {/* Desktop menu toggle button */}
+        {/* Desktop menu toggle */}
         <IconButton
           color="inherit"
           aria-label="toggle drawer"
@@ -86,13 +102,23 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
 
         {/* Right side */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Weaviate status indicator */}
-          <Chip
-            label="Weaviate"
-            color="success"
-            size="small"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          />
+          {/* Provider status chip — only shown once provider info is loaded */}
+          {providerLabel && (
+            <Tooltip title={providerReady ? `${providerLabel} connected` : `${providerLabel} unreachable`}>
+              <Chip
+                label={providerLabel}
+                size="small"
+                sx={{
+                  display: { xs: 'none', sm: 'flex' },
+                  bgcolor: providerColor,
+                  color: '#fff',
+                  fontWeight: 700,
+                  opacity: providerReady ? 1 : 0.5,
+                  border: providerReady ? 'none' : '1px dashed #fff',
+                }}
+              />
+            </Tooltip>
+          )}
 
           {/* Dark / light mode toggle */}
           <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
@@ -116,7 +142,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
             </Box>
           )}
 
-          {/* Logout button */}
+          {/* Logout */}
           <Button
             color="inherit"
             onClick={handleLogout}
@@ -132,4 +158,3 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
 };
 
 export default TopBar;
-

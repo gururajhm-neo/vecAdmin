@@ -1,129 +1,155 @@
-# Weaviate Admin UI
+# VecAdmin — Open-Source Vector DB Admin UI
 
-Open-source admin dashboard for self-hosted or managed Weaviate clusters.
+A **production-ready admin dashboard** for managing vector databases — supports **Weaviate**, **Qdrant**, and **ChromaDB** with a single configuration change.
 
-This repository includes:
-- `weaviate-admin-api`: FastAPI backend (auth, Weaviate proxy, scoped queries)
-- `weaviate-admin-ui`: React + TypeScript frontend (dashboard, schema viewer, data browser, query playground)
-- Deployment and setup docs for local, Docker, and EC2 environments
+> Built with FastAPI + React + TypeScript + MUI v5. Swap your vector DB backend in one env var.
 
-## Features
+![Provider chips: Weaviate (green), Qdrant (pink), ChromaDB (orange)]()
 
-- JWT-based authentication and protected API routes
-- Dashboard with health status, object counts, and memory metrics
-- Schema viewer with class/property inspection
-- Data browser with pagination, object detail modal, and similarity search
-- Query playground with read-only GraphQL validation
-- Configurable data scoping via environment variables (default `project_id`)
+## ✨ Features
+
+- 🔌 **Multi-provider** — Weaviate · Qdrant · ChromaDB (one `DB_PROVIDER` env var to switch)
+- 🔐 **JWT authentication** with configurable user accounts
+- 📊 **Dashboard** — health status, object counts, memory metrics
+- 🗂️ **Schema viewer** — collections/classes with property inspection and visual graph
+- 🔍 **Data browser** — pagination, object detail modal, similarity search
+- 🧪 **Query playground** — GraphQL (Weaviate) or JSON (Qdrant/ChromaDB) with read-only validation
+- 🎭 **Mock mode** — full demo without any DB (`REACT_APP_MOCK_MODE=true`)
+- 🐳 **Docker Compose** — one command to run everything
+- 🏢 **Multi-tenant scoping** — isolate data per user via any field (`project_id`, `tenant_id`, etc.)
 
 ## Project Structure
 
 ```text
 .
-├── weaviate-admin-api/
-├── weaviate-admin-ui/
+├── weaviate-admin-api/    # FastAPI backend (Python 3.9+)
+│   ├── app/
+│   │   ├── providers/     # Weaviate / Qdrant / ChromaDB implementations
+│   │   ├── api/v1/        # REST endpoints
+│   │   ├── services/      # Auth, provider shim
+│   │   └── config.py      # All settings via env vars
+│   └── requirements.txt
+├── weaviate-admin-ui/     # React + TypeScript frontend
+│   └── src/
+│       ├── pages/         # Dashboard, Schema, Data, Query, Login
+│       ├── components/    # Reusable MUI components
+│       └── api/mock/      # Mock adapter for demo mode
 ├── docker-compose.yml
-├── start-dev.sh
-├── stop-dev.sh
-├── DEPLOYMENT.md
-├── WEAVIATE_SETUP.md
-└── README.md
+├── start-dev.sh           # Local dev launcher
+├── start-mock.sh          # Demo mode launcher (no DB needed)
+└── stop-dev.sh
 ```
 
 ## Quick Start
 
-### Prerequisites
-
-- Python 3.10+
-- Node.js 18+ and npm
-- A running Weaviate instance (local or remote)
-
-### 1) Clone and start both services
+### Option 1 — Demo mode (no DB required)
 
 ```bash
+./start-mock.sh
+# Open http://localhost:3000
+# Login: any of the 4 domain cards shown on the login screen
+```
+
+### Option 2 — Connect to a real vector DB
+
+```bash
+# 1. Configure your backend
+cp weaviate-admin-api/.env.example weaviate-admin-api/.env
+# Edit .env: set DB_PROVIDER and the matching connection settings
+
+# 2. Start everything
 ./start-dev.sh
 ```
 
-The script initializes both backend and frontend, creates `.env` files if missing, and starts:
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8000`
-- API docs: `http://localhost:8000/docs`
+| URL | Service |
+|-----|---------|
+| http://localhost:3000 | Frontend UI |
+| http://localhost:8000 | Backend API |
+| http://localhost:8000/docs | Swagger / OpenAPI |
 
-### 2) Default demo credentials
+**Default demo credentials:** `engineer1@example.com` / `admin123`
 
-- `engineer1@example.com` / `admin123`
-- `engineer2@example.com` / `admin123`
+## Provider Configuration
 
-## Configuration
+Change one line in `weaviate-admin-api/.env`:
+
+```bash
+# Weaviate (default) — GraphQL query editor
+DB_PROVIDER=weaviate
+WEAVIATE_URL=http://localhost:8080
+
+# Qdrant — JSON query editor, pink chip
+DB_PROVIDER=qdrant
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+
+# ChromaDB — JSON query editor, orange chip
+DB_PROVIDER=chroma
+CHROMA_HOST=localhost
+CHROMA_PORT=8000
+```
+
+Then restart the backend. The UI adapts automatically — provider chip color, query language, and editor help text all update to match.
+
+## Configuration Reference
 
 ### Backend (`weaviate-admin-api/.env`)
 
-Copy from `weaviate-admin-api/.env.example` and customize:
-
-- `WEAVIATE_URL`
-- `JWT_SECRET`
-- `CORS_ORIGINS`
-- `SCOPE_FIELD_NAME` (default: `project_id`)
-- `SCOPE_FIELD_VALUE_TYPE` (`int` or `string`)
-- `AUTH_USERS_JSON` (optional bootstrap users)
-- `PROJECT_METADATA_JSON` (optional friendly scope labels)
+| Variable | Default | Description |
+|---|---|---|
+| `DB_PROVIDER` | `weaviate` | `weaviate` \| `qdrant` \| `chroma` |
+| `WEAVIATE_URL` | `http://localhost:8080` | Weaviate instance URL |
+| `QDRANT_HOST` | `localhost` | Qdrant host |
+| `QDRANT_PORT` | `6333` | Qdrant port |
+| `CHROMA_HOST` | `localhost` | ChromaDB host |
+| `CHROMA_PORT` | `8000` | ChromaDB port |
+| `JWT_SECRET` | *(required)* | JWT signing secret |
+| `CORS_ORIGINS` | `http://localhost:3000` | Allowed frontend origins |
+| `SCOPE_FIELD_NAME` | `project_id` | Field used to partition data per user |
+| `AUTH_USERS_JSON` | *(see below)* | JSON array of user accounts |
 
 ### Frontend (`weaviate-admin-ui/.env`)
 
-Copy from `weaviate-admin-ui/.env.example` and customize:
-
-- `REACT_APP_API_URL`
-- `REACT_APP_ORGANIZATION_NAME`
-- `REACT_APP_APP_TITLE`
-- `REACT_APP_APP_DESCRIPTION`
-- optional demo credential env vars
+| Variable | Description |
+|---|---|
+| `REACT_APP_API_URL` | Backend URL (default: `http://localhost:8000/api/v1`) |
+| `REACT_APP_MOCK_MODE` | `true` enables offline demo mode |
+| `REACT_APP_ORGANIZATION_NAME` | Org name shown in top bar |
 
 ## Development Commands
 
-### Backend
-
 ```bash
-cd weaviate-admin-api
-source venv/bin/activate
+# Backend
+cd weaviate-admin-api && source venv/bin/activate
 uvicorn app.main:app --reload --port 8000
-```
 
-Run backend tests:
+# Frontend
+cd weaviate-admin-ui && npm start
 
-```bash
-cd weaviate-admin-api
-source venv/bin/activate
-pip install -r requirements-dev.txt
+# Backend tests
 PYTHONPATH=. pytest -q
-```
 
-### Frontend
-
-```bash
-cd weaviate-admin-ui
-npm install
-npm start
-```
-
-Run frontend tests and production build:
-
-```bash
-cd weaviate-admin-ui
+# Frontend tests + build
 CI=true npm test -- --watch=false --passWithNoTests
 npm run build
 ```
 
-## Deployment
+## Docker
 
-- See `DEPLOYMENT.md` for EC2 + Nginx + systemd deployment.
-- See `WEAVIATE_SETUP.md` for local/remote Weaviate setup options.
+```bash
+docker compose up --build
+```
 
-## Open-Source Notes
-
-- Brand/custom text is environment-configurable.
-- Demo users are intended for local development only.
-- Set strong secrets and production auth/user management before internet-facing deployment.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for EC2 + Nginx + systemd setup.
 
 ## License
 
-Choose and add your license file (for example MIT or Apache-2.0) before public release.
+This project is licensed under the Apache License 2.0. See `LICENSE`.
+
+## Contributing
+
+Contributions are welcome. Please review `CONTRIBUTING.md` before opening a pull request.
+
+## Code of Conduct
+
+Please review `CODE_OF_CONDUCT.md` to help keep this community open and respectful.

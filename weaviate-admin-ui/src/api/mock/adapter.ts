@@ -411,9 +411,25 @@ async function dispatch(config: any): Promise<any> {
     return ok(config, { ...resultData, execution_time_ms: 45 + Math.floor(Math.random() * 80) });
   }
 
-  // Health check
+  // GET /health
   if (url.includes('/health')) {
     return ok(config, { status: 'healthy' });
+  }
+
+  // GET /provider/info
+  if (url.includes('/provider/info')) {
+    return ok(config, {
+      provider: 'Weaviate',
+      query_language: 'graphql',
+      ready: true,
+      capabilities: {
+        vector_search: true,
+        filters: true,
+        full_text_search: true,
+        graphql: true,
+        aggregate: true,
+      },
+    });
   }
 
   // Fallback — return empty 200

@@ -8,3 +8,13 @@ pydantic-settings==2.1.0
 python-dotenv==1.0.0
 email-validator==2.2.0
 
+# ── Optional vector-DB providers ─────────────────────────────────────────────
+# Uncomment / install the client(s) for the provider(s) you want to use.
+# Weaviate is included above and active by default (DB_PROVIDER=weaviate).
+#
+# Qdrant  — set DB_PROVIDER=qdrant in .env
+qdrant-client>=1.7.0
+#
+# ChromaDB — set DB_PROVIDER=chroma in .env
+chromadb>=0.4.0
+
