@@ -10,6 +10,7 @@ interface QueryEditorProps {
   onExecute: () => void;
   onClear: () => void;
   loading: boolean;
+  editorLanguage?: string;
 }
 
 const QueryEditor: React.FC<QueryEditorProps> = ({
@@ -18,6 +19,7 @@ const QueryEditor: React.FC<QueryEditorProps> = ({
   onExecute,
   onClear,
   loading,
+  editorLanguage = 'graphql',
 }) => {
   const theme = useTheme();
   return (
@@ -47,7 +49,7 @@ const QueryEditor: React.FC<QueryEditorProps> = ({
       <Box sx={{ flex: 1, minHeight: 0 }}>
         <Editor
           height="100%"
-          language="graphql"
+          language={editorLanguage}
           value={query}
           onChange={(value) => onQueryChange(value || '')}
           theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs'}

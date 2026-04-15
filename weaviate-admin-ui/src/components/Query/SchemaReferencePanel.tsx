@@ -31,6 +31,7 @@ import { formatNumber } from '../../utils/formatters';
 // ─── Helpers: check if a dataType is a scalar (not a cross-ref to another class) ──
 const isScalar = (dt: string) => !/^[A-Z]/.test(dt);
 
+// ── GraphQL builders ─────────────────────────────────────────────────────────
 function buildGetQuery(cls: ClassSchema): string {
   const props = cls.properties
     .filter((p) => p.dataType.every(isScalar))
@@ -105,13 +106,35 @@ ${props ? props + '\n' : ''}      _additional {
 }`;
 }
 
+// ── JSON builders (Qdrant / ChromaDB / FAISS) ─────────────────────────────────
+function buildJsonGetQuery(cls: ClassSchema): string {
+  return JSON.stringify({ collection: cls.name, limit: 10 }, null, 2);
+}
+
+function buildJsonFilterQuery(cls: ClassSchema): string {
+  const firstProp = cls.properties.find((p) => p.dataType.every(isScalar));
+  const filter = firstProp ? { [firstProp.name]: { $eq: 'value' } } : undefined;
+  const q: Record<string, unknown> = { collection: cls.name, limit: 10 };
+  if (filter) q.where = filter;
+  return JSON.stringify(q, null, 2);
+}
+
+function buildJsonAnnQuery(cls: ClassSchema): string {
+  return JSON.stringify(
+    { collection: cls.name, query_vector: Array(8).fill(0).map((_, i) => parseFloat((0.1 * (i + 1)).toFixed(1))), limit: 5 },
+    null,
+    2,
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 interface Props {
   selectedProjectId: number | 'all' | null;
   onInsertQuery: (query: string) => void;
+  queryLanguage?: string;
 }
 
-const SchemaReferencePanel: React.FC<Props> = ({ selectedProjectId, onInsertQuery }) => {
+const SchemaReferencePanel: React.FC<Props> = ({ selectedProjectId, onInsertQuery, queryLanguage = 'graphql' }) => {
   const [open, setOpen] = useState(true);
   const [classes, setClasses] = useState<ClassSchema[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,53 +321,70 @@ const SchemaReferencePanel: React.FC<Props> = ({ selectedProjectId, onInsertQuer
                 <Box sx={{ px: 1.5, pb: 1.5 }}>
                   {/* Quick action buttons */}
                   <Box sx={{ display: 'flex', gap: 0.5, mt: 0.75, flexWrap: 'wrap' }}>
-                    <Tooltip title={`Get ${cls.name} records (limit 10)`}>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="primary"
-                        startIcon={<ListAltIcon sx={{ fontSize: 11 }} />}
-                        onClick={() => onInsertQuery(buildGetQuery(cls))}
-                        sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
-                      >
-                        Get
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Count all objects in this class">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<BarChartIcon sx={{ fontSize: 11 }} />}
-                        onClick={() => onInsertQuery(buildCountQuery(cls.name))}
-                        sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
-                      >
-                        Count
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Filter with Where clause">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<FilterAltIcon sx={{ fontSize: 11 }} />}
-                        onClick={() => onInsertQuery(buildWhereQuery(cls))}
-                        sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
-                      >
-                        Filter
-                      </Button>
-                    </Tooltip>
-                    {hasVectorizer(cls) && (
-                      <Tooltip title="Semantic nearText search (requires vectorizer)">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="secondary"
-                          startIcon={<TroubleshootIcon sx={{ fontSize: 11 }} />}
-                          onClick={() => onInsertQuery(buildNearTextQuery(cls))}
-                          sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
-                        >
-                          Search
-                        </Button>
-                      </Tooltip>
+                    {queryLanguage === 'graphql' ? (
+                      <>
+                        <Tooltip title={`Get ${cls.name} records (limit 10)`}>
+                          <Button
+                            size="small" variant="contained" color="primary"
+                            startIcon={<ListAltIcon sx={{ fontSize: 11 }} />}
+                            onClick={() => onInsertQuery(buildGetQuery(cls))}
+                            sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                          >Get</Button>
+                        </Tooltip>
+                        <Tooltip title="Count all objects in this class">
+                          <Button
+                            size="small" variant="outlined"
+                            startIcon={<BarChartIcon sx={{ fontSize: 11 }} />}
+                            onClick={() => onInsertQuery(buildCountQuery(cls.name))}
+                            sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                          >Count</Button>
+                        </Tooltip>
+                        <Tooltip title="Filter with Where clause">
+                          <Button
+                            size="small" variant="outlined"
+                            startIcon={<FilterAltIcon sx={{ fontSize: 11 }} />}
+                            onClick={() => onInsertQuery(buildWhereQuery(cls))}
+                            sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                          >Filter</Button>
+                        </Tooltip>
+                        {hasVectorizer(cls) && (
+                          <Tooltip title="Semantic nearText search (requires vectorizer)">
+                            <Button
+                              size="small" variant="outlined" color="secondary"
+                              startIcon={<TroubleshootIcon sx={{ fontSize: 11 }} />}
+                              onClick={() => onInsertQuery(buildNearTextQuery(cls))}
+                              sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                            >Search</Button>
+                          </Tooltip>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Tooltip title={`List ${cls.name} records (limit 10)`}>
+                          <Button
+                            size="small" variant="contained" color="primary"
+                            startIcon={<ListAltIcon sx={{ fontSize: 11 }} />}
+                            onClick={() => onInsertQuery(buildJsonGetQuery(cls))}
+                            sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                          >Get</Button>
+                        </Tooltip>
+                        <Tooltip title="Filter by a field value">
+                          <Button
+                            size="small" variant="outlined"
+                            startIcon={<FilterAltIcon sx={{ fontSize: 11 }} />}
+                            onClick={() => onInsertQuery(buildJsonFilterQuery(cls))}
+                            sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                          >Filter</Button>
+                        </Tooltip>
+                        <Tooltip title="ANN vector search (query_vector)">
+                          <Button
+                            size="small" variant="outlined" color="secondary"
+                            startIcon={<TroubleshootIcon sx={{ fontSize: 11 }} />}
+                            onClick={() => onInsertQuery(buildJsonAnnQuery(cls))}
+                            sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
+                          >ANN</Button>
+                        </Tooltip>
+                      </>
                     )}
                   </Box>
 

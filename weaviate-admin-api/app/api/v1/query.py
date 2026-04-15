@@ -20,12 +20,15 @@ async def execute_query(
     Requires authentication.
     """
     try:
-        query = sanitize_query(request.query)
-
-        # Only apply the GraphQL validator for Weaviate — other providers
-        # use JSON and would be incorrectly rejected.
+        # Resolve provider first so sanitize + validate can key off query_language
         provider = get_provider()
-        if provider.query_language == "graphql":
+        is_graphql = provider.query_language == "graphql"
+
+        query = sanitize_query(request.query, is_graphql=is_graphql)
+
+        # Only apply the GraphQL read-only validator for Weaviate — JSON providers
+        # (Qdrant / ChromaDB / FAISS) would be incorrectly rejected by it.
+        if is_graphql:
             validation_error = validate_query_syntax(query)
             if validation_error:
                 return QueryExecuteResponse(

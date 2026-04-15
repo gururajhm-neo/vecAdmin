@@ -1,6 +1,6 @@
 # VecAdmin — Open-Source Vector DB Admin UI
 
-A **production-ready admin dashboard** for managing vector databases — supports **Weaviate**, **Qdrant**, and **ChromaDB** with a single configuration change.
+A **production-ready admin dashboard** for managing vector databases — supports **Weaviate**, **Qdrant**, **ChromaDB**, and **FAISS** with a single configuration change.
 
 > Built with FastAPI + React + TypeScript + MUI v5. Swap your vector DB backend in one env var.
 
@@ -8,7 +8,7 @@ A **production-ready admin dashboard** for managing vector databases — support
 
 ## ✨ Features
 
-- 🔌 **Multi-provider** — Weaviate · Qdrant · ChromaDB (one `DB_PROVIDER` env var to switch)
+- 🔌 **Multi-provider** — Weaviate · Qdrant · ChromaDB · FAISS (one `DB_PROVIDER` env var to switch)
 - 🔐 **JWT authentication** with configurable user accounts
 - 📊 **Dashboard** — health status, object counts, memory metrics
 - 🗂️ **Schema viewer** — collections/classes with property inspection and visual graph
@@ -24,7 +24,7 @@ A **production-ready admin dashboard** for managing vector databases — support
 .
 ├── weaviate-admin-api/    # FastAPI backend (Python 3.9+)
 │   ├── app/
-│   │   ├── providers/     # Weaviate / Qdrant / ChromaDB implementations
+│   │   ├── providers/     # Weaviate / Qdrant / ChromaDB / FAISS implementations
 │   │   ├── api/v1/        # REST endpoints
 │   │   ├── services/      # Auth, provider shim
 │   │   └── config.py      # All settings via env vars
@@ -87,6 +87,10 @@ QDRANT_PORT=6333
 DB_PROVIDER=chroma
 CHROMA_HOST=localhost
 CHROMA_PORT=8000
+
+# FAISS — JSON query editor, blue chip (local flat-file, no server needed)
+DB_PROVIDER=faiss
+FAISS_INDEX_DIR=./faiss_data
 ```
 
 Then restart the backend. The UI adapts automatically — provider chip color, query language, and editor help text all update to match.
@@ -97,7 +101,7 @@ Then restart the backend. The UI adapts automatically — provider chip color, q
 
 | Variable | Default | Description |
 |---|---|---|
-| `DB_PROVIDER` | `weaviate` | `weaviate` \| `qdrant` \| `chroma` |
+| `DB_PROVIDER` | `weaviate` | `weaviate` \| `qdrant` \| `chroma` \| `faiss` |
 | `WEAVIATE_URL` | `http://localhost:8080` | Weaviate instance URL |
 | `QDRANT_HOST` | `localhost` | Qdrant host |
 | `QDRANT_PORT` | `6333` | Qdrant port |

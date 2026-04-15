@@ -25,6 +25,7 @@ const PROVIDER_COLORS: Record<string, string> = {
   Weaviate:  '#4CAF50',
   Qdrant:    '#E91E8C',
   ChromaDB:  '#FF6F00',
+  FAISS:     '#1877F2',
 };
 
 interface TopBarProps {

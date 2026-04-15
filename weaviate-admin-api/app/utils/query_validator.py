@@ -44,16 +44,19 @@ def validate_query_syntax(query: str) -> Optional[str]:
     return None
 
 
-def sanitize_query(query: str) -> str:
+def sanitize_query(query: str, is_graphql: bool = True) -> str:
     """
     Sanitize query string.
-    Remove excessive whitespace and normalize formatting.
+    For GraphQL: strip # comments and normalize whitespace.
+    For JSON providers (Qdrant/ChromaDB/FAISS): only normalize whitespace —
+    stripping # would corrupt JSON string values that contain the character.
     """
-    # Remove comments
-    query = re.sub(r'#.*$', '', query, flags=re.MULTILINE)
-    
-    # Normalize whitespace
+    if is_graphql:
+        # Remove GraphQL line comments
+        query = re.sub(r'#.*$', '', query, flags=re.MULTILINE)
+
+    # Normalize whitespace (safe for both GraphQL and JSON)
     query = ' '.join(query.split())
-    
+
     return query
 

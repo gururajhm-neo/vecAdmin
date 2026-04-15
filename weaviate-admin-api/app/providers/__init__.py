@@ -6,6 +6,7 @@ Supported values:
   weaviate  — Weaviate v3 (default)
   qdrant    — Qdrant (requires: pip install qdrant-client>=1.7.0)
   chroma    — ChromaDB (requires: pip install chromadb>=0.4.0)
+  faiss     — FAISS local flat-file (requires: pip install faiss-cpu)
 """
 
 from typing import Optional
@@ -45,7 +46,11 @@ def _create_provider() -> VectorDBProvider:
         from app.providers.chroma_provider import ChromaProvider
         return ChromaProvider()
 
+    if name == "faiss":
+        from app.providers.faiss_provider import FAISSProvider
+        return FAISSProvider()
+
     raise ValueError(
         f"Unknown DB_PROVIDER='{settings.DB_PROVIDER}'. "
-        "Supported values: weaviate | qdrant | chroma"
+        "Supported values: weaviate | qdrant | chroma | faiss"
     )

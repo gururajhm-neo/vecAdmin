@@ -38,3 +38,9 @@ yarn-error.log*
 
 # Runtime files
 *.pid
+
+# Local vector DB data (runtime artifacts)
+storage/
+weaviate-admin-api/faiss_data/
+snapshots/
+.qdrant-initialized

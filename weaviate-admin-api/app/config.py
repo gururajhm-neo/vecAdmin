@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     CHROMA_TENANT:   str = "default_tenant"
     CHROMA_DATABASE: str = "default_database"
 
+    # ── FAISS (local flat-file) ───────────────────────────────────────────────
+    FAISS_INDEX_DIR: str = "./faiss_data"
+
+    # ── AI / Groq ──────────────────────────────────────────────────────────
+    GROQ_API_KEY:      str = ""
+    GROQ_MODEL:        str = "llama-3.3-70b-versatile"
+    GROQ_MAX_TOKENS:   int = 32768
+    GROQ_MAX_REQUESTS: int = 1000
+
     # ── JWT ───────────────────────────────────────────────────────────────────
     JWT_SECRET: str = "your-secret-key-change-this-in-production"
     JWT_ALGORITHM: str = "HS256"

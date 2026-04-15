@@ -17,4 +17,12 @@ qdrant-client>=1.7.0
 #
 # ChromaDB — set DB_PROVIDER=chroma in .env
 chromadb>=0.4.0
+#
+# FAISS — set DB_PROVIDER=faiss in .env  (local, no server needed)
+# faiss-cpu>=1.7.4   # CPU-only  — most users
+# faiss-gpu>=1.7.4   # GPU/CUDA  — uncomment if you have CUDA
+
+# ── AI (optional) ─────────────────────────────────────────────────────────────
+# Groq — set GROQ_API_KEY in .env
+groq>=1.0.0
 
