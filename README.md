@@ -153,3 +153,7 @@ Contributions are welcome. Please review `CONTRIBUTING.md` before opening a pull
 ## Code of Conduct
 
 Please review `CODE_OF_CONDUCT.md` to help keep this community open and respectful.
+
+---
+
+> Built and open-sourced by **[JNANIX NGPT Pvt Ltd](https://www.testneo.ai)** · [www.testneo.ai](https://www.testneo.ai)
