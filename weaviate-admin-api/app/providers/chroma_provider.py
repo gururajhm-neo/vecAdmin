@@ -191,11 +191,14 @@ class ChromaProvider(VectorDBProvider):
                 return None
             obj = dict((result.get("metadatas") or [{}])[0] or {})
             docs = result.get("documents") or []
-            embs = result.get("embeddings") or []
+            # chromadb >=1.0 returns embeddings as numpy.ndarray — avoid `or []`
+            raw_embs = result.get("embeddings")
+            embs = [] if raw_embs is None else raw_embs
             if docs:
                 obj["document"] = docs[0]
-            if embs:
-                obj["vector"] = embs[0]
+            if len(embs) > 0 and embs[0] is not None:
+                vec = embs[0]
+                obj["vector"] = vec.tolist() if hasattr(vec, "tolist") else list(vec)
             obj["id"] = uuid
             obj["class"] = class_name
             return obj
@@ -216,8 +219,10 @@ class ChromaProvider(VectorDBProvider):
             src = col.get(ids=[object_id], include=["embeddings"])
             if not src.get("ids"):
                 return {"error": f"Object '{object_id}' not found"}
-            embeddings = src.get("embeddings") or []
-            if not embeddings or not embeddings[0]:
+            # chromadb >=1.0 returns embeddings as numpy.ndarray — avoid `or []`
+            raw_emb = src.get("embeddings")
+            embeddings = [] if raw_emb is None else raw_emb
+            if len(embeddings) == 0 or embeddings[0] is None:
                 return {"error": "Source object has no embedding stored"}
 
             where: Optional[Dict] = None
