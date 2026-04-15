@@ -88,7 +88,15 @@ COLLECTIONS = {
 DIM = 128  # vector dimension for providers that need one
 
 def _random_vector(dim: int = DIM) -> list:
-    return [round(random.uniform(-1, 1), 6) for _ in range(dim)]
+    """Return a random L2-normalised unit vector.
+
+    Using unit vectors ensures that squared-L2 distance is equivalent to
+    2*(1 - cosine_similarity), giving similarity scores in a meaningful range.
+    """
+    import math
+    v = [random.gauss(0, 1) for _ in range(dim)]
+    norm = math.sqrt(sum(x * x for x in v)) or 1.0
+    return [round(x / norm, 6) for x in v]
 
 
 # ── Provider seeders ──────────────────────────────────────────────────────────

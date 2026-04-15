@@ -265,14 +265,32 @@ class FAISSProvider(VectorDBProvider):
             k = min(limit + 1, index.ntotal)
             distances, indices = index.search(query_vec, k)
 
-            objects = []
+            # Collect raw (dist, entry) pairs, excluding the query itself
+            raw: list = []
             for dist, idx in zip(distances[0], indices[0]):
                 if idx == src_pos or idx < 0:
                     continue
                 entry = meta[idx] if idx < len(meta) else {}
-                objects.append(self._to_object(entry, distance=dist))
-                if len(objects) >= limit:
+                raw.append((float(dist), entry))
+                if len(raw) >= limit:
                     break
+
+            # Normalize distances to [0, 1] within this result set so the UI
+            # shows meaningful spread (closest → ~100%, farthest → ~0%)
+            # regardless of absolute distance scale (L2, squared-L2, etc.)
+            if raw:
+                min_d = raw[0][0]          # already sorted ascending by FAISS
+                max_d = raw[-1][0]
+                d_range = max_d - min_d
+                objects = [
+                    self._to_object(
+                        entry,
+                        distance=(d - min_d) / d_range if d_range > 1e-9 else 0.0,
+                    )
+                    for d, entry in raw
+                ]
+            else:
+                objects = []
 
             return {"data": {"Get": {class_name: objects}}}
         except Exception as exc:

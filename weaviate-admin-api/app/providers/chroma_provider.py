@@ -244,15 +244,26 @@ class ChromaProvider(VectorDBProvider):
             metas = (result.get("metadatas") or [[]])[0]
             dists = (result.get("distances") or [[]])[0]
 
-            objects = [
-                self._to_object(
-                    ids[i],
-                    docs[i] if docs else None,
-                    metas[i] if metas else None,
-                    dists[i] if dists else None,
-                )
+            # Filter self, keep up to limit
+            raw = [
+                (ids[i], docs[i] if docs else None, metas[i] if metas else None, float(dists[i]) if dists else 0.0)
                 for i in range(len(ids))
                 if ids[i] != object_id
+            ][:limit]
+
+            # Normalize distances within result set → [0,1] (closest=0, farthest=1)
+            # so the UI formula (1-d)*100 gives a meaningful 0-100% spread
+            if raw:
+                raw_dists = [r[3] for r in raw]
+                min_d, max_d = min(raw_dists), max(raw_dists)
+                d_range = max_d - min_d
+
+            objects = [
+                self._to_object(
+                    r[0], r[1], r[2],
+                    distance=(r[3] - min_d) / d_range if (raw and d_range > 1e-9) else 0.0,
+                )
+                for r in raw
             ][:limit]
             return {"data": {"Get": {class_name: objects}}}
         except Exception as exc:
