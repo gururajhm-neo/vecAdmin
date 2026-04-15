@@ -111,10 +111,12 @@ class WeaviateProvider(VectorDBProvider):
         where = (
             f"where: {{ operator: And operands: [{scope}] }}" if scope else ""
         )
+        # Only add parentheses when there's an actual filter — empty () is invalid GraphQL
+        args = f"({where})" if where else ""
         gql = f"""
         {{
             Aggregate {{
-                {class_name}({where}) {{
+                {class_name}{args} {{
                     meta {{ count }}
                 }}
             }}
@@ -124,7 +126,12 @@ class WeaviateProvider(VectorDBProvider):
             result = self.execute_query(gql)
             agg = result.get("data", {}).get("Aggregate", {}).get(class_name, [])
             if agg and agg[0].get("meta"):
-                return agg[0]["meta"].get("count", 0)
+                count = agg[0]["meta"].get("count", 0)
+                # If scoped count is 0, fall back to unfiltered total —
+                # objects may not have the project_id field set.
+                if count == 0 and project_id is not None:
+                    return self.count_objects(class_name, project_id=None)
+                return count
         except Exception:
             pass
         return 0
