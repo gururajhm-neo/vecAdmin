@@ -3,7 +3,11 @@ import time
 from app.models.query import QueryExecuteRequest, QueryExecuteResponse
 from app.services.weaviate_service import weaviate_service
 from app.middleware.auth import get_current_user
-from app.utils.query_validator import validate_query_syntax, sanitize_query
+from app.utils.query_validator import (
+    validate_query_syntax,
+    sanitize_query,
+    find_placeholder_token,
+)
 from app.providers import get_provider
 
 router = APIRouter()
@@ -25,6 +29,16 @@ async def execute_query(
         is_graphql = provider.query_language == "graphql"
 
         query = sanitize_query(request.query, is_graphql=is_graphql)
+
+        placeholder = find_placeholder_token(query)
+        if placeholder:
+            return QueryExecuteResponse(
+                error=(
+                    f"Replace placeholder '{placeholder}' with a real collection/class "
+                    "name from the Schema panel before running the query."
+                ),
+                execution_time_ms=0,
+            )
 
         # Only apply the GraphQL read-only validator for Weaviate — JSON providers
         # (Qdrant / ChromaDB / FAISS) would be incorrectly rejected by it.

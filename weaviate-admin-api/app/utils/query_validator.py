@@ -2,6 +2,9 @@ import re
 from typing import Optional
 
 
+PLACEHOLDER_TOKENS = ("YourCollection", "YourClassName")
+
+
 def is_read_only_query(query: str) -> bool:
     """
     Validate that GraphQL query is read-only (no mutations).
@@ -59,4 +62,15 @@ def sanitize_query(query: str, is_graphql: bool = True) -> str:
     query = ' '.join(query.split())
 
     return query
+
+
+def find_placeholder_token(query: str) -> Optional[str]:
+    """
+    Return the first known placeholder token found in a query, if any.
+    Used to fail fast with a friendly validation message.
+    """
+    for token in PLACEHOLDER_TOKENS:
+        if token in query:
+            return token
+    return None
 

@@ -1,4 +1,5 @@
 from app.utils.query_validator import (
+    find_placeholder_token,
     is_read_only_query,
     sanitize_query,
     validate_query_syntax,
@@ -39,3 +40,13 @@ def test_sanitize_query_removes_comments_and_extra_whitespace():
     assert "#" not in sanitized
     assert "  " not in sanitized
     assert "Get" in sanitized
+
+
+def test_find_placeholder_token_detects_default_json_placeholder():
+    query = '{"collection":"YourCollection","limit":10}'
+    assert find_placeholder_token(query) == "YourCollection"
+
+
+def test_find_placeholder_token_returns_none_for_real_collection():
+    query = '{"collection":"Articles","limit":10}'
+    assert find_placeholder_token(query) is None

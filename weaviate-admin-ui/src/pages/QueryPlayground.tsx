@@ -17,10 +17,10 @@ import SchemaReferencePanel from '../components/Query/SchemaReferencePanel';
 import { useAuth } from '../contexts/AuthContext';
 import { getProviderInfo, ProviderInfo } from '../api/provider';
 
-const GRAPHQL_DEFAULT = `{
+const buildGraphqlDefault = (className = 'YourClassName') => `{
   Get {
     # ← Use the Schema panel on the left to browse real classes and insert queries
-    YourClassName(limit: 10) {
+    ${className}(limit: 10) {
       _additional {
         id
       }
@@ -28,8 +28,8 @@ const GRAPHQL_DEFAULT = `{
   }
 }`;
 
-const JSON_DEFAULT = JSON.stringify(
-  { collection: 'YourCollection', limit: 10 },
+const buildJsonDefault = (collectionName = 'YourCollection') => JSON.stringify(
+  { collection: collectionName, limit: 10 },
   null, 2
 );
 
@@ -73,14 +73,16 @@ const QueryPlayground: React.FC = () => {
     if (!providerInfo) return;
     const incoming = (location.state as any)?.query;
     if (incoming) return;
-    const correctDefault =
-      providerInfo.query_language === 'graphql' ? GRAPHQL_DEFAULT : JSON_DEFAULT;
+    const firstClassName = schemaClasses[0]?.name;
+    const correctDefault = providerInfo.query_language === 'graphql'
+      ? buildGraphqlDefault(firstClassName || 'YourClassName')
+      : buildJsonDefault(firstClassName || 'YourCollection');
     setQuery(prev =>
-      prev === '' || prev === GRAPHQL_DEFAULT || prev === JSON_DEFAULT
+      prev === '' || prev.includes('YourClassName') || prev.includes('YourCollection')
         ? correctDefault
         : prev,
     );
-  }, [providerInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [providerInfo, schemaClasses, location.state]);
 
   useEffect(() => {
     const incoming = (location.state as any)?.query;
@@ -93,6 +95,13 @@ const QueryPlayground: React.FC = () => {
 
   const handleExecute = async () => {
     if (!query.trim()) return;
+    if (query.includes('YourCollection') || query.includes('YourClassName')) {
+      setResult({
+        error:
+          'Please pick a real collection/class from the Schema panel, or replace the placeholder name before running.',
+      });
+      return;
+    }
     setLoading(true);
     setExplanation(null);
     try {
