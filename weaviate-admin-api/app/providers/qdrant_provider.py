@@ -272,17 +272,19 @@ class QdrantProvider(VectorDBProvider):
                 return {"error": "Source object has no vector stored"}
 
             # Step 2: nearest-neighbour search
+            # NOTE: qdrant-client >= 1.13 removed search(); use query_points()
             filt = self._scope_filter(project_id)
-            hits = self._client.search(
+            result = self._client.query_points(
                 collection_name=class_name,
-                query_vector=vector,
-                limit=limit + 1,  # +1 to exclude the source itself
+                query=vector,
                 query_filter=filt,
+                limit=limit + 1,  # +1 to exclude the source itself
                 with_payload=True,
+                with_vectors=False,
             )
             objects = [
                 self._point_to_object(h)
-                for h in hits
+                for h in result.points
                 if str(h.id) != str(object_id)
             ][:limit]
             return {"data": {"Get": {class_name: objects}}}
