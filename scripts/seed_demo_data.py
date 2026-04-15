@@ -111,17 +111,47 @@ def seed_faiss(index_dir: str):
     import json, os
 
     os.makedirs(index_dir, exist_ok=True)
-    for col_name, records in COLLECTIONS.items():
+
+    # ── Phase 1: assign UUIDs to Users so other collections can reference them ──
+    users_meta = [{"id": str(uuid.uuid4()), **r} for r in USERS]
+    name_to_uid = {m["name"]: m["id"] for m in users_meta}
+    user_uids   = list(name_to_uid.values())
+
+    # ── Phase 2: Articles  →  hasAuthor  →  Users ──────────────────────────────
+    # author names in ARTICLES intentionally match Users.name
+    articles_meta = []
+    for r in ARTICLES:
+        rec = dict(r)
+        author_uid = name_to_uid.get(r.get("author", ""))
+        if author_uid:
+            rec["hasAuthor"] = author_uid
+            rec["_xrefs"]    = json.dumps({"hasAuthor": "Users"})
+        articles_meta.append({"id": str(uuid.uuid4()), **rec})
+
+    # ── Phase 3: Products  →  hasReviewer  →  Users ────────────────────────────
+    products_meta = []
+    for r in PRODUCTS:
+        rec = dict(r)
+        rec["hasReviewer"] = random.choice(user_uids)
+        rec["_xrefs"]      = json.dumps({"hasReviewer": "Users"})
+        products_meta.append({"id": str(uuid.uuid4()), **rec})
+
+    per_collection = {
+        "Users":    users_meta,
+        "Articles": articles_meta,
+        "Products": products_meta,
+    }
+
+    for col_name, meta in per_collection.items():
         col_dir = os.path.join(index_dir, col_name)
         os.makedirs(col_dir, exist_ok=True)
-        index = faiss.IndexFlatL2(DIM)
-        vectors = np.array([_random_vector() for _ in records], dtype="float32")
+        index   = faiss.IndexFlatL2(DIM)
+        vectors = np.array([_random_vector() for _ in meta], dtype="float32")
         index.add(vectors)
         faiss.write_index(index, os.path.join(col_dir, "index.faiss"))
-        meta = [{"id": str(uuid.uuid4()), **r} for r in records]
         with open(os.path.join(col_dir, "metadata.json"), "w") as f:
             json.dump(meta, f, indent=2)
-        print(f"  ✓ {col_name}: {len(records)} objects")
+        print(f"  ✓ {col_name}: {len(meta)} objects")
 
 
 def seed_qdrant(host: str, port: int):
@@ -162,13 +192,44 @@ def seed_chroma(host: str, port: int):
         sys.exit(1)
 
     client = chromadb.HttpClient(host=host, port=port)
-    for col_name, records in COLLECTIONS.items():
+
+    # ── Phase 1: Users (no cross-refs) ─────────────────────────────────────────
+    users_records   = list(USERS)
+    users_ids       = [str(i) for i in range(len(users_records))]
+    # Use sequential string IDs for ChromaDB; build name→id map for references
+    name_to_id  = {r["name"]: str(i) for i, r in enumerate(users_records)}
+    id_list     = list(name_to_id.values())
+
+    # ── Phase 2: Articles  →  hasAuthor  →  Users ──────────────────────────────
+    articles_records = []
+    for r in ARTICLES:
+        rec = dict(r)
+        author_id = name_to_id.get(r.get("author", ""))
+        if author_id:
+            rec["hasAuthor"] = author_id
+            rec["_xrefs"]    = json.dumps({"hasAuthor": "Users"})
+        articles_records.append(rec)
+
+    # ── Phase 3: Products  →  hasReviewer  →  Users ────────────────────────────
+    products_records = []
+    for r in PRODUCTS:
+        rec = dict(r)
+        rec["hasReviewer"] = random.choice(id_list)
+        rec["_xrefs"]      = json.dumps({"hasReviewer": "Users"})
+        products_records.append(rec)
+
+    seeding = [
+        ("Users",    users_records,    users_ids),
+        ("Articles", articles_records, [str(i) for i in range(len(articles_records))]),
+        ("Products", products_records, [str(i) for i in range(len(products_records))]),
+    ]
+
+    for col_name, records, ids in seeding:
         try:
             client.delete_collection(col_name)
         except Exception:
             pass
-        col = client.create_collection(col_name)
-        ids       = [str(i) for i in range(len(records))]
+        col       = client.create_collection(col_name)
         documents = [json.dumps(r) for r in records]
         col.add(ids=ids, documents=documents, metadatas=records)
         print(f"  ✓ {col_name}: {len(records)} objects")

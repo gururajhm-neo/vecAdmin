@@ -126,11 +126,23 @@ class FAISSProvider(VectorDBProvider):
         if not meta:
             return []
         sample = meta[0]
-        return [
-            {"name": k, "dataType": ["text"]}
-            for k in sample.keys()
-            if k != "id"
-        ]
+        # Read cross-reference hints written by the seed script
+        xrefs: Dict[str, str] = {}
+        if "_xrefs" in sample:
+            try:
+                xrefs = json.loads(sample["_xrefs"])
+            except Exception:
+                pass
+        props = []
+        for k in sample.keys():
+            if k in ("id", "_xrefs"):
+                continue
+            if k in xrefs:
+                # Cross-reference to another class
+                props.append({"name": k, "dataType": [xrefs[k]]})
+            else:
+                props.append({"name": k, "dataType": ["text"]})
+        return props
 
     def _collection_to_class(self, name: str) -> Dict[str, Any]:
         meta = _load_meta(name)

@@ -79,7 +79,22 @@ class ChromaProvider(VectorDBProvider):
             result = collection.peek(limit=1)
             if result and result.get("metadatas"):
                 meta = result["metadatas"][0] or {}
-                return [{"name": k, "dataType": ["text"]} for k in meta.keys()]
+                # Read cross-reference hints written by the seed script
+                xrefs: Dict[str, str] = {}
+                if "_xrefs" in meta:
+                    try:
+                        xrefs = json.loads(meta["_xrefs"])
+                    except Exception:
+                        pass
+                props = []
+                for k in meta.keys():
+                    if k == "_xrefs":
+                        continue
+                    if k in xrefs:
+                        props.append({"name": k, "dataType": [xrefs[k]]})
+                    else:
+                        props.append({"name": k, "dataType": ["text"]})
+                return props
         except Exception:
             pass
         return []
