@@ -123,13 +123,14 @@ QDRANT_PORT=${QDRANT_PORT:-6333}
 CHROMA_PID=""
 
 if [ "$DB_PROVIDER" = "chroma" ]; then
-    # Check if ChromaDB is already running
-    if curl -s "http://localhost:${CHROMA_PORT}/api/v1" > /dev/null 2>&1; then
+    # Check if ChromaDB is already running (use TCP check — v2 API removed /api/v1)
+    _chroma_alive() { nc -z localhost "${CHROMA_PORT}" 2>/dev/null; }
+    if _chroma_alive; then
         echo -e "${GREEN}✓ ChromaDB already running on :${CHROMA_PORT}${NC}"
     else
         echo -e "${YELLOW}Starting ChromaDB on :${CHROMA_PORT}...${NC}"
         source "$BACKEND_DIR/venv/bin/activate"
-        # Try chroma CLI first, fall back to uvicorn chromadb.app
+        # Try chroma CLI first, fall back to python -m
         if command -v chroma > /dev/null 2>&1; then
             chroma run --port "$CHROMA_PORT" > /tmp/chroma.log 2>&1 &
             CHROMA_PID=$!
@@ -137,17 +138,24 @@ if [ "$DB_PROVIDER" = "chroma" ]; then
             python3 -m chromadb.cli.cli run --port "$CHROMA_PORT" > /tmp/chroma.log 2>&1 &
             CHROMA_PID=$!
         fi
-        sleep 3
-        if curl -s "http://localhost:${CHROMA_PORT}/api/v1" > /dev/null 2>&1; then
+        sleep 4
+        if _chroma_alive; then
             echo -e "${GREEN}✓ ChromaDB started (PID: $CHROMA_PID)${NC}"
         else
             echo -e "${RED}✗ ChromaDB failed to start. Check: tail -f /tmp/chroma.log${NC}"
             echo -e "${YELLOW}  Try: pip install chromadb && chroma run --port ${CHROMA_PORT}${NC}"
         fi
     fi
-    # Seed if empty
+    # Seed if empty (use Python client — works with both v1 and v2 API)
     source "$BACKEND_DIR/venv/bin/activate"
-    COL_COUNT=$(curl -s "http://localhost:${CHROMA_PORT}/api/v1/collections" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "0")
+    COL_COUNT=$(python3 -W ignore -c "
+import chromadb, sys
+try:
+    c = chromadb.HttpClient(host='localhost', port=${CHROMA_PORT})
+    print(len(c.list_collections()))
+except Exception:
+    print('0')
+" 2>/dev/null || echo "0")
     if [ "$COL_COUNT" = "0" ]; then
         echo -e "${YELLOW}No collections found — seeding demo data...${NC}"
         python3 "$SCRIPT_DIR/scripts/seed_demo_data.py" --provider chroma 2>/dev/null && \

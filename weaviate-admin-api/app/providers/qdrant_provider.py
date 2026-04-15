@@ -310,9 +310,13 @@ class QdrantProvider(VectorDBProvider):
                 if str(h.get("id")) == str(object_id):
                     continue
                 payload = dict(h.get("payload") or {})
+                # Qdrant returns cosine *score* (0-1, higher = more similar).
+                # Convert to *distance* (0-1, lower = more similar) so the UI
+                # formula (1 - distance) * 100 gives the correct percentage.
+                score = h.get("score")
                 payload["_additional"] = {
                     "id": str(h.get("id", "")),
-                    "distance": h.get("score"),
+                    "distance": (1.0 - float(score)) if score is not None else None,
                     "creationTimeUnix": 0,
                 }
                 objects.append(payload)
