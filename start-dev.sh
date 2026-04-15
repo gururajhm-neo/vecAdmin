@@ -31,6 +31,12 @@ cleanup() {
         echo -e "${YELLOW}Stopping frontend (PID: $FRONTEND_PID)...${NC}"
         kill $FRONTEND_PID 2>/dev/null
     fi
+
+    # Kill ChromaDB if we started it
+    if [ ! -z "$CHROMA_PID" ]; then
+        echo -e "${YELLOW}Stopping ChromaDB (PID: $CHROMA_PID)...${NC}"
+        kill $CHROMA_PID 2>/dev/null
+    fi
     
     echo -e "${GREEN}All services stopped.${NC}"
     exit 0
@@ -98,6 +104,105 @@ EOL
 fi
 
 echo -e "${GREEN}✓ Backend setup complete${NC}\n"
+
+# ============================================
+# PROVIDER-AWARE DB STARTUP
+# ============================================
+echo -e "${BLUE}[1b/4] Checking vector DB provider...${NC}"
+
+# Read DB_PROVIDER from .env
+DB_PROVIDER=$(grep '^DB_PROVIDER=' "$BACKEND_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+DB_PROVIDER=${DB_PROVIDER:-weaviate}
+echo -e "  Provider: ${YELLOW}${DB_PROVIDER}${NC}"
+
+CHROMA_PORT=$(grep '^CHROMA_PORT=' "$BACKEND_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+CHROMA_PORT=${CHROMA_PORT:-8001}
+QDRANT_PORT=$(grep '^QDRANT_PORT=' "$BACKEND_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+QDRANT_PORT=${QDRANT_PORT:-6333}
+
+CHROMA_PID=""
+
+if [ "$DB_PROVIDER" = "chroma" ]; then
+    # Check if ChromaDB is already running
+    if curl -s "http://localhost:${CHROMA_PORT}/api/v1" > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ ChromaDB already running on :${CHROMA_PORT}${NC}"
+    else
+        echo -e "${YELLOW}Starting ChromaDB on :${CHROMA_PORT}...${NC}"
+        source "$BACKEND_DIR/venv/bin/activate"
+        # Try chroma CLI first, fall back to uvicorn chromadb.app
+        if command -v chroma > /dev/null 2>&1; then
+            chroma run --port "$CHROMA_PORT" > /tmp/chroma.log 2>&1 &
+            CHROMA_PID=$!
+        else
+            python3 -m chromadb.cli.cli run --port "$CHROMA_PORT" > /tmp/chroma.log 2>&1 &
+            CHROMA_PID=$!
+        fi
+        sleep 3
+        if curl -s "http://localhost:${CHROMA_PORT}/api/v1" > /dev/null 2>&1; then
+            echo -e "${GREEN}✓ ChromaDB started (PID: $CHROMA_PID)${NC}"
+        else
+            echo -e "${RED}✗ ChromaDB failed to start. Check: tail -f /tmp/chroma.log${NC}"
+            echo -e "${YELLOW}  Try: pip install chromadb && chroma run --port ${CHROMA_PORT}${NC}"
+        fi
+    fi
+    # Seed if empty
+    source "$BACKEND_DIR/venv/bin/activate"
+    COL_COUNT=$(curl -s "http://localhost:${CHROMA_PORT}/api/v1/collections" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "0")
+    if [ "$COL_COUNT" = "0" ]; then
+        echo -e "${YELLOW}No collections found — seeding demo data...${NC}"
+        python3 "$SCRIPT_DIR/scripts/seed_demo_data.py" --provider chroma 2>/dev/null && \
+            echo -e "${GREEN}✓ Demo data seeded (Products · Articles · Users)${NC}" || \
+            echo -e "${YELLOW}⚠ Seed failed — start ChromaDB first, then run: python3 scripts/seed_demo_data.py --provider chroma${NC}"
+    else
+        echo -e "${GREEN}✓ ChromaDB has ${COL_COUNT} collection(s)${NC}"
+    fi
+
+elif [ "$DB_PROVIDER" = "qdrant" ]; then
+    if curl -s "http://localhost:${QDRANT_PORT}/" > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ Qdrant already running on :${QDRANT_PORT}${NC}"
+        source "$BACKEND_DIR/venv/bin/activate"
+        COL_COUNT=$(python3 -W ignore -c "
+from qdrant_client import QdrantClient
+c = QdrantClient(host='localhost', port=${QDRANT_PORT}, timeout=5)
+print(len(c.get_collections().collections))
+" 2>/dev/null || echo "0")
+        if [ "$COL_COUNT" = "0" ]; then
+            echo -e "${YELLOW}No collections — seeding demo data...${NC}"
+            python3 "$SCRIPT_DIR/scripts/seed_demo_data.py" --provider qdrant 2>/dev/null && \
+                echo -e "${GREEN}✓ Demo data seeded${NC}" || true
+        else
+            echo -e "${GREEN}✓ Qdrant has ${COL_COUNT} collection(s)${NC}"
+        fi
+    else
+        echo -e "${RED}✗ Qdrant not running on :${QDRANT_PORT}${NC}"
+        echo -e "${YELLOW}  Start it with: docker run -p ${QDRANT_PORT}:6333 qdrant/qdrant${NC}"
+    fi
+
+elif [ "$DB_PROVIDER" = "faiss" ]; then
+    FAISS_DIR=$(grep '^FAISS_INDEX_DIR=' "$BACKEND_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+    FAISS_DIR=${FAISS_DIR:-./faiss_data}
+    # Resolve relative path
+    [[ "$FAISS_DIR" != /* ]] && FAISS_DIR="$BACKEND_DIR/$FAISS_DIR"
+    if [ -d "$FAISS_DIR" ] && [ "$(ls -A "$FAISS_DIR" 2>/dev/null)" ]; then
+        echo -e "${GREEN}✓ FAISS data found at ${FAISS_DIR}${NC}"
+    else
+        echo -e "${YELLOW}No FAISS data — seeding...${NC}"
+        source "$BACKEND_DIR/venv/bin/activate"
+        python3 "$SCRIPT_DIR/scripts/seed_demo_data.py" --provider faiss 2>/dev/null && \
+            echo -e "${GREEN}✓ FAISS demo data seeded${NC}" || true
+    fi
+
+elif [ "$DB_PROVIDER" = "weaviate" ]; then
+    WEAVIATE_URL=$(grep '^WEAVIATE_URL=' "$BACKEND_DIR/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+    WEAVIATE_URL=${WEAVIATE_URL:-http://localhost:8080}
+    if curl -s "${WEAVIATE_URL}/v1/.well-known/ready" > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ Weaviate reachable at ${WEAVIATE_URL}${NC}"
+    else
+        echo -e "${RED}✗ Weaviate not reachable at ${WEAVIATE_URL}${NC}"
+        echo -e "${YELLOW}  Start it with: docker run -p 8080:8080 semitechnologies/weaviate:latest${NC}"
+    fi
+fi
+echo ""
 
 # ============================================
 # FRONTEND SETUP
@@ -184,6 +289,7 @@ echo -e ""
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000"
 echo -e "  ${BLUE}Backend:${NC}   http://localhost:8000"
 echo -e "  ${BLUE}API Docs:${NC}  http://localhost:8000/docs"
+echo -e "  ${BLUE}Provider:${NC}  ${YELLOW}${DB_PROVIDER}${NC}"
 echo -e ""
 echo -e "${YELLOW}Test Credentials:${NC}"
 echo -e "  Email: engineer1@example.com"
