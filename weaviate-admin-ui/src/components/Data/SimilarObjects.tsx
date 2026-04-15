@@ -65,8 +65,12 @@ const SimilarObjects: React.FC<SimilarObjectsProps> = ({ objects, onBack }) => {
               </TableRow>
             ) : (
               objects.map((obj, index) => {
-                const distance = obj._additional?.distance || 0;
-                const similarity = Math.round((1 - distance) * 100);
+                const distance = obj._additional?.distance ?? 0;
+                // Cosine distance (Weaviate/Qdrant): range 0-1, use (1-d)*100
+                // L2 distance (FAISS/Chroma):        range 0-∞, use 100/(1+d)
+                const similarity = distance <= 1
+                  ? Math.max(0, Math.round((1 - distance) * 100))
+                  : Math.round(100 / (1 + distance));
 
                 return (
                   <TableRow
@@ -76,7 +80,7 @@ const SimilarObjects: React.FC<SimilarObjectsProps> = ({ objects, onBack }) => {
                     <TableCell>
                       <Chip
                         label={`${similarity}%`}
-                        color={similarity > 80 ? 'success' : similarity > 60 ? 'warning' : 'default'}
+                        color={similarity > 70 ? 'success' : similarity > 40 ? 'warning' : 'default'}
                         size="small"
                       />
                     </TableCell>
