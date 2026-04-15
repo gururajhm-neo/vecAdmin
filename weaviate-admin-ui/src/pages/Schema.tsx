@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Paper } from '@mui/material';
+import { Box, Typography, Grid, Paper, Button, Tooltip } from '@mui/material';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+import { useNavigate } from 'react-router-dom';
 import { getSchema } from '../api/schema';
 import { ClassSchema } from '../types';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
@@ -12,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Schema: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [classes, setClasses] = useState<ClassSchema[]>([]);
   const [selectedClass, setSelectedClass] = useState<ClassSchema | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,14 +78,26 @@ const Schema: React.FC = () => {
     <Box>
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4" component="h1">
-            Schema Viewer
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {selectedProjectId === 'all' 
-              ? 'Showing object counts for all projects' 
-              : `Showing object counts for Project ID: ${selectedProjectId}`}
-          </Typography>
+          <Box>
+            <Typography variant="h4" component="h1">
+              Schema Viewer
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {selectedProjectId === 'all'
+                ? 'Showing object counts for all projects'
+                : `Showing object counts for Project ID: ${selectedProjectId}`}
+            </Typography>
+          </Box>
+          <Tooltip title="Visualise classes and cross-references as a node graph">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<BubbleChartIcon />}
+              onClick={() => navigate('/schema-graph')}
+            >
+              Graph View
+            </Button>
+          </Tooltip>
         </Box>
         <Paper sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

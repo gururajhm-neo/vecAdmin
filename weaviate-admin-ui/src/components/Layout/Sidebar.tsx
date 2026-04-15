@@ -15,6 +15,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import SchemaIcon from '@mui/icons-material/AccountTree';
 import DataIcon from '@mui/icons-material/Storage';
 import QueryIcon from '@mui/icons-material/Code';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 
 const DRAWER_WIDTH = 240;
 const COLLAPSED_DRAWER_WIDTH = 65;
@@ -22,6 +23,7 @@ const COLLAPSED_DRAWER_WIDTH = 65;
 const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: <DashboardIcon /> },
   { path: '/schema', label: 'Schema Viewer', icon: <SchemaIcon /> },
+  { path: '/schema-graph', label: 'Schema Graph', icon: <BubbleChartIcon /> },
   { path: '/data', label: 'Data Browser', icon: <DataIcon /> },
   { path: '/query', label: 'Query Playground', icon: <QueryIcon /> },
 ];

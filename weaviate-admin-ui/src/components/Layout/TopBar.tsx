@@ -7,12 +7,16 @@ import {
   Box,
   Button,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import { useAuth } from '../../contexts/AuthContext';
+import { useColorMode } from '../../contexts/ColorModeContext';
 import { useNavigate } from 'react-router-dom';
 import { APP_ORGANIZATION_NAME, APP_TITLE } from '../../utils/constants';
 
@@ -24,6 +28,7 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isCollapsed = false }) => {
   const { user, logout } = useAuth();
+  const { mode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -88,6 +93,13 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
             size="small"
             sx={{ display: { xs: 'none', sm: 'flex' } }}
           />
+
+          {/* Dark / light mode toggle */}
+          <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
+            <IconButton color="inherit" onClick={toggleColorMode} size="small">
+              {mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
 
           {/* User info */}
           {user && (

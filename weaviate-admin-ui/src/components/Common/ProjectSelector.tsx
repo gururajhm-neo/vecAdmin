@@ -90,12 +90,14 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     );
   }
 
+  // No partition field on this Weaviate instance — hide the selector entirely.
+  // All data will be shown (no filter applied). Works perfectly for generic datasets.
+  if (!loading && availableProjects.length === 0) {
+    return null;
+  }
+
   if (error) {
-    return (
-      <Typography variant="body2" color="error">
-        {error}
-      </Typography>
-    );
+    return null; // Silently hide on error — don't pollute the UI
   }
 
   return (

@@ -9,6 +9,21 @@
       content="Weaviate Admin Dashboard"
     />
     <title>Weaviate Admin</title>
+    <script>
+      // Suppress benign ResizeObserver loop errors from Monaco Editor / React Flow / Recharts.
+      // These libraries trigger ResizeObserver callbacks that cause layout changes in the same
+      // frame — the browser reports it but continues normally. CRA's dev overlay treats every
+      // error event as fatal, so we intercept it in CAPTURE phase (which runs before CRA's
+      // BUBBLE-phase listener) and stop it from propagating any further.
+      window.addEventListener('error', function(e) {
+        if (
+          e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+          e.message === 'ResizeObserver loop limit exceeded'
+        ) {
+          e.stopImmediatePropagation();
+        }
+      }, true /* capture phase */);
+    </script>
     <style>
       body {
         margin: 0;

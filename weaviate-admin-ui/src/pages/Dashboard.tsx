@@ -7,7 +7,6 @@ import {
   CardContent,
   IconButton,
   Tooltip,
-  Paper,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { getDashboardOverview } from '../api/dashboard';
@@ -15,8 +14,8 @@ import { DashboardData } from '../types';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import ErrorMessage from '../components/Common/ErrorMessage';
 import HealthCard from '../components/Dashboard/HealthCard';
-import ObjectCountCard from '../components/Dashboard/ObjectCountCard';
-import MemoryCard from '../components/Dashboard/MemoryCard';
+import ObjectCountChart from '../components/Dashboard/ObjectCountChart';
+import MemoryGaugeCard from '../components/Dashboard/MemoryGaugeCard';
 import ProjectSelector from '../components/Common/ProjectSelector';
 import { DASHBOARD_REFRESH_INTERVAL } from '../utils/constants';
 import { formatNumber } from '../utils/formatters';
@@ -86,37 +85,24 @@ const Dashboard: React.FC = () => {
     <Box>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Box>
-            <Typography variant="h4" component="h1">
-              Dashboard
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {selectedProjectId === 'all' 
-                ? 'Showing data for all projects' 
-                : `Showing data for Project ID: ${selectedProjectId}`}
-            </Typography>
-          </Box>
-          <Tooltip title="Refresh">
-            <IconButton onClick={handleRefresh} disabled={refreshing}>
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h4" component="h1">
+            Dashboard
+          </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ minWidth: 100 }}>
-              Filter by Project:
-            </Typography>
-            <Box sx={{ minWidth: 200 }}>
-              <ProjectSelector
-                selectedProjectId={selectedProjectId}
-                onProjectChange={handleProjectChange}
-                showAllOption={true}
-              />
-            </Box>
+            {/* Renders null automatically when no project partitioning exists */}
+            <ProjectSelector
+              selectedProjectId={selectedProjectId}
+              onProjectChange={handleProjectChange}
+              showAllOption={true}
+            />
+            <Tooltip title="Refresh">
+              <IconButton onClick={handleRefresh} disabled={refreshing}>
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
-        </Paper>
+        </Box>
       </Box>
 
       {/* Main Grid */}
@@ -133,7 +119,7 @@ const Dashboard: React.FC = () => {
         {/* Memory Usage */}
         {data.memory && (
           <Grid item xs={12} md={6} lg={4}>
-            <MemoryCard memory={data.memory} />
+            <MemoryGaugeCard memory={data.memory} />
           </Grid>
         )}
 
@@ -154,18 +140,12 @@ const Dashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* Object Counts by Class */}
-        <Grid item xs={12}>
-          <Typography variant="h5" gutterBottom sx={{ mt: 2 }}>
-            Objects by Class
-          </Typography>
-        </Grid>
-
-        {Object.entries(data.object_counts).map(([className, count]) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={className}>
-            <ObjectCountCard className={className} count={count} />
+        {/* Objects by Class — bar chart */}
+        {Object.keys(data.object_counts).length > 0 && (
+          <Grid item xs={12}>
+            <ObjectCountChart counts={data.object_counts} />
           </Grid>
-        ))}
+        )}
       </Grid>
     </Box>
   );

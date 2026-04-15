@@ -9,6 +9,7 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  Chip,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -17,27 +18,33 @@ import {
   APP_TITLE,
   DEMO_CREDENTIALS,
 } from '../utils/constants';
+import { DOMAINS, DomainKey, getCurrentDomain, setDomain } from '../api/mock/domains';
+
+const IS_MOCK = process.env.REACT_APP_MOCK_MODE === 'true';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const [selectedDomain, setSelectedDomain] = useState<DomainKey>(getCurrentDomain());
+
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    }
+    if (isAuthenticated) navigate('/dashboard');
   }, [isAuthenticated, navigate]);
+
+  const handleDomainSelect = (key: DomainKey) => {
+    setDomain(key);
+    setSelectedDomain(key);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       await login({ email, password });
       navigate('/dashboard');
@@ -103,6 +110,45 @@ const Login: React.FC = () => {
           >
             {APP_DESCRIPTION}
           </Typography>
+
+          {/* ── Mock Mode: Domain Selector ── */}
+          {IS_MOCK && (
+            <Box sx={{ width: '100%', mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <Chip label="DEMO MODE" size="small" color="warning" sx={{ fontWeight: 700, fontSize: 10 }} />
+                <Typography variant="caption" color="text.secondary">
+                  Pick a dataset to explore:
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                {(Object.values(DOMAINS) as typeof DOMAINS[DomainKey][]).map((d) => (
+                  <Paper
+                    key={d.key}
+                    variant="outlined"
+                    onClick={() => handleDomainSelect(d.key)}
+                    sx={{
+                      p: 1.25,
+                      cursor: 'pointer',
+                      borderRadius: 2,
+                      borderColor: selectedDomain === d.key ? d.color : 'divider',
+                      borderWidth: selectedDomain === d.key ? 2 : 1,
+                      bgcolor: selectedDomain === d.key ? `${d.color}12` : 'transparent',
+                      transition: 'all 0.15s',
+                      '&:hover': { borderColor: d.color, bgcolor: `${d.color}0a` },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 20, lineHeight: 1 }}>{d.icon}</Typography>
+                    <Typography variant="body2" fontWeight={700} sx={{ mt: 0.5, fontSize: 12 }}>
+                      {d.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+                      {d.tagline}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
+            </Box>
+          )}
 
           {/* Error message */}
           {error && (

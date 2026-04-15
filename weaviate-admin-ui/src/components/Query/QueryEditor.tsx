@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Paper } from '@mui/material';
+import { Box, Button, Paper, useTheme } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ClearIcon from '@mui/icons-material/Clear';
 import Editor from '@monaco-editor/react';
@@ -19,6 +19,7 @@ const QueryEditor: React.FC<QueryEditorProps> = ({
   onClear,
   loading,
 }) => {
+  const theme = useTheme();
   return (
     <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -49,7 +50,7 @@ const QueryEditor: React.FC<QueryEditorProps> = ({
           language="graphql"
           value={query}
           onChange={(value) => onQueryChange(value || '')}
-          theme="vs-dark"
+          theme={theme.palette.mode === 'dark' ? 'vs-dark' : 'vs'}
           options={{
             minimap: { enabled: false },
             fontSize: 14,
