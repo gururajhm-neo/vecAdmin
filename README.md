@@ -3,6 +3,24 @@
 > **The pgAdmin / Mongo Express for vector databases.**  
 > One dashboard, four backends — swap in 30 seconds.
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-gururajhm--neo%2FvecAdmin-181717?logo=github)](https://github.com/gururajhm-neo/vecAdmin)
+[![Live Demo](https://img.shields.io/badge/🎬%20Live%20Demo-View%20Screenshots%20%26%20Walkthrough-blue)](https://github.com/gururajhm-neo/vecAdmin/issues/1)
+
+---
+
+## 🎬 Live Demo
+
+> **[▶ Click here for screenshots & full UI walkthrough →](https://github.com/gururajhm-neo/vecAdmin/issues/1)**
+
+No setup needed — run the mock mode locally in 30 seconds:
+
+```bash
+./start-mock.sh
+# Open http://localhost:3000  →  Login: engineer1@example.com / admin123
+```
+
+---
+
 VecAdmin is a production-ready admin UI for engineers and data teams who work
 with vector databases every day but are tired of raw REST calls and CLI
 gymnastics. Point it at **Weaviate**, **Qdrant**, **ChromaDB**, or **FAISS**,
@@ -356,9 +374,11 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
-opening a pull request, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) to help
-keep this community open and respectful.
+Contributions are welcome! The repo is at **https://github.com/gururajhm-neo/vecAdmin**.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request,
+and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) to help keep this community open
+and respectful.
 
 ---
 
