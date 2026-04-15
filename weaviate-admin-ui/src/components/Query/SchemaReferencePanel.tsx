@@ -119,6 +119,14 @@ function buildJsonFilterQuery(cls: ClassSchema): string {
   return JSON.stringify(q, null, 2);
 }
 
+function buildQdrantFilterQuery(cls: ClassSchema): string {
+  const firstProp = cls.properties.find((p) => p.dataType.every(isScalar));
+  const must = firstProp ? [{ key: firstProp.name, match: { value: 'someValue' } }] : [];
+  const q: Record<string, unknown> = { collection: cls.name, limit: 10 };
+  if (must.length) q.filter = { must };
+  return JSON.stringify(q, null, 2);
+}
+
 function buildJsonAnnQuery(cls: ClassSchema): string {
   return JSON.stringify(
     { collection: cls.name, query_vector: Array(8).fill(0).map((_, i) => parseFloat((0.1 * (i + 1)).toFixed(1))), limit: 5 },
@@ -132,9 +140,11 @@ interface Props {
   selectedProjectId: number | 'all' | null;
   onInsertQuery: (query: string) => void;
   queryLanguage?: string;
+  provider?: string;
 }
 
-const SchemaReferencePanel: React.FC<Props> = ({ selectedProjectId, onInsertQuery, queryLanguage = 'graphql' }) => {
+const SchemaReferencePanel: React.FC<Props> = ({ selectedProjectId, onInsertQuery, queryLanguage = 'graphql', provider = '' }) => {
+  const isQdrant = provider.toLowerCase() === 'qdrant';
   const [open, setOpen] = useState(true);
   const [classes, setClasses] = useState<ClassSchema[]>([]);
   const [loading, setLoading] = useState(true);
@@ -368,11 +378,11 @@ const SchemaReferencePanel: React.FC<Props> = ({ selectedProjectId, onInsertQuer
                             sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
                           >Get</Button>
                         </Tooltip>
-                        <Tooltip title="Filter by a field value">
+                        <Tooltip title={isQdrant ? 'Filter by field (Qdrant must[] syntax)' : 'Filter by a field value'}>
                           <Button
                             size="small" variant="outlined"
                             startIcon={<FilterAltIcon sx={{ fontSize: 11 }} />}
-                            onClick={() => onInsertQuery(buildJsonFilterQuery(cls))}
+                            onClick={() => onInsertQuery(isQdrant ? buildQdrantFilterQuery(cls) : buildJsonFilterQuery(cls))}
                             sx={{ fontSize: 10, py: 0.3, px: 0.75, minWidth: 0 }}
                           >Filter</Button>
                         </Tooltip>

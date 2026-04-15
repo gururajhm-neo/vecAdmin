@@ -52,12 +52,22 @@ Rules:
   - Use nearText for semantic search
   - Limit to 10 unless user specifies otherwise"""
         example = '{\n  Get {\n    Products(limit: 10) {\n      name\n      _additional { id }\n    }\n  }\n}'
+    elif provider.lower() == "qdrant":
+        format_instructions = """Return ONLY a valid JSON object — no explanation, no markdown fences, no extra text.
+Rules:
+  - Always include "collection" (string) and "limit" (int, default 10)
+  - For field filters use "filter": {"must": [{"key": "fieldName", "match": {"value": "someValue"}}]}
+  - Multiple conditions: add more objects to the "must" array
+  - For pagination use "offset": int
+  - Do NOT use "where" or "$eq" — Qdrant uses "filter.must" syntax"""
+        example = '{"collection": "Products", "filter": {"must": [{"key": "category", "match": {"value": "Electronics"}}]}, "limit": 10}'
     else:
+        # ChromaDB and FAISS share the $eq / where syntax
         format_instructions = f"""Return ONLY a valid JSON object — no explanation, no markdown fences, no extra text.
 Rules:
   - Always include "collection" (string) and "limit" (int, default 10)
   - For field filters use "where": {{"fieldName": {{"$eq": "value"}}}}
-  - For vector search use "query_vector": [array of floats] with "limit"
+  - For vector/semantic search use "query_vector": [array of floats] with "limit"
   - For pagination use "offset": int
   - Provider is {provider}"""
         example = '{"collection": "Products", "limit": 10}'
