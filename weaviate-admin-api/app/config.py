@@ -28,11 +28,27 @@ class Settings(BaseSettings):
     # ── FAISS (local flat-file) ───────────────────────────────────────────────
     FAISS_INDEX_DIR: str = "./faiss_data"
 
-    # ── AI / Groq ──────────────────────────────────────────────────────────
+    # ── AI provider ────────────────────────────────────────────────────────
+    # Which LLM backend to use: groq | openai | anthropic | ollama
+    AI_PROVIDER: str = "groq"
+
+    # Groq (default — free tier at console.groq.com)
     GROQ_API_KEY:      str = ""
     GROQ_MODEL:        str = "llama-3.3-70b-versatile"
     GROQ_MAX_TOKENS:   int = 32768
     GROQ_MAX_REQUESTS: int = 1000
+
+    # OpenAI (platform.openai.com)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL:   str = "gpt-4o-mini"
+
+    # Anthropic (console.anthropic.com)
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL:   str = "claude-3-haiku-20240307"
+
+    # Ollama — local, no key needed (ollama.com)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL:    str = "llama3"
 
     # ── JWT ───────────────────────────────────────────────────────────────────
     JWT_SECRET: str = "your-secret-key-change-this-in-production"

@@ -70,7 +70,7 @@ Built with **FastAPI + React 18 + TypeScript + Material UI v5**.
 │   ├── app/
 │   │   ├── providers/     # Weaviate / Qdrant / ChromaDB / FAISS implementations
 │   │   ├── api/v1/        # REST endpoints
-│   │   ├── services/      # Auth, AI (Groq), provider shim
+│   │   ├── services/      # Auth, AI (Groq/OpenAI/Anthropic/Ollama), provider shim
 │   │   └── config.py      # All settings via env vars
 │   └── requirements.txt
 ├── weaviate-admin-ui/     # React + TypeScript frontend
@@ -190,18 +190,52 @@ List active users in the Engineering department
 
 ## 🤖 AI Assistant
 
-The Query Playground has a natural-language bar powered by **Groq** (free tier
-available). Type a question and the AI generates the correct query format for
-your active provider — GraphQL for Weaviate, JSON filters for Qdrant / ChromaDB
-/ FAISS — then explains the results in plain English.
+The Query Playground has a natural-language bar. Type a question and the AI
+generates the correct query format for your active provider — GraphQL for
+Weaviate, JSON for Qdrant / ChromaDB / FAISS — then explains results in plain
+English.
+
+VecAdmin supports **four AI backends** — pick whichever you already have:
+
+| Provider | `AI_PROVIDER` | Key needed | Cost |
+|---|---|---|---|
+| **Groq** *(default)* | `groq` | `GROQ_API_KEY` | ✅ Free tier |
+| **OpenAI** | `openai` | `OPENAI_API_KEY` | 💳 Pay-per-use |
+| **Anthropic** | `anthropic` | `ANTHROPIC_API_KEY` | 💳 Pay-per-use |
+| **Ollama** *(local)* | `ollama` | *(none)* | ✅ Free / offline |
 
 ### Setup
 
 ```bash
-# 1. Get a free API key at https://console.groq.com
-# 2. Add to weaviate-admin-api/.env:
-GROQ_API_KEY=gsk_your_key_here
-GROQ_MODEL=llama-3.3-70b-versatile   # default; any Groq model works
+# ── Groq (free, recommended) ──────────────────────────────────
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_...          # console.groq.com → free account
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# ── OpenAI ────────────────────────────────────────────────────
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-...         # platform.openai.com
+OPENAI_MODEL=gpt-4o-mini
+
+# ── Anthropic ─────────────────────────────────────────────────
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...  # console.anthropic.com
+ANTHROPIC_MODEL=claude-3-haiku-20240307
+
+# ── Ollama (local, no internet, no key) ───────────────────────
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+# brew install ollama && ollama pull llama3 && ollama serve
+```
+
+Then install the matching pip package (only if not already installed):
+
+```bash
+pip install openai       # OpenAI
+pip install anthropic    # Anthropic
+# Groq is already in requirements.txt
+# Ollama needs no pip package — uses HTTP directly
 ```
 
 ### How it works
@@ -211,8 +245,8 @@ GROQ_MODEL=llama-3.3-70b-versatile   # default; any Groq model works
 3. The AI generates the query and pre-fills the editor
 4. Run it, then click **"Explain"** to get a plain-English summary of the results
 
-> If `GROQ_API_KEY` is not set the AI bar is hidden and the playground works
-> in manual mode.
+> If no key is configured (or Ollama isn't running) the AI bar is hidden and
+> the playground works in manual mode.
 
 ---
 
@@ -257,8 +291,15 @@ FAISS_INDEX_DIR=./faiss_data
 | `CHROMA_HOST` | `localhost` | ChromaDB host |
 | `CHROMA_PORT` | `8001` | ChromaDB port |
 | `FAISS_INDEX_DIR` | `./faiss_data` | Directory for FAISS index files |
-| `GROQ_API_KEY` | *(optional)* | Enables AI assistant — get a free key at console.groq.com |
+| `AI_PROVIDER` | `groq` | `groq` \| `openai` \| `anthropic` \| `ollama` |
+| `GROQ_API_KEY` | *(optional)* | Groq API key — free at console.groq.com |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model name |
+| `OPENAI_API_KEY` | *(optional)* | OpenAI API key |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
+| `ANTHROPIC_API_KEY` | *(optional)* | Anthropic API key |
+| `ANTHROPIC_MODEL` | `claude-3-haiku-20240307` | Anthropic model name |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL (local) |
+| `OLLAMA_MODEL` | `llama3` | Ollama model name |
 | `JWT_SECRET` | *(required)* | JWT signing secret — **change before deploying** |
 | `JWT_ALGORITHM` | `HS256` | JWT algorithm |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Token TTL in minutes |
@@ -328,7 +369,7 @@ See [ORG_ID_ISOLATION.md](ORG_ID_ISOLATION.md) for the full design.
 |---|---|---|
 | `"ready": false` on dashboard | Wrong host/port, or DB not running | Check DB is up; verify `DB_PROVIDER` and connection vars in `.env` |
 | All object counts show 0 | Seed data not loaded | Run `python3 scripts/seed_demo_data.py` |
-| AI bar not visible in Query Playground | `GROQ_API_KEY` not set | Add key to `.env` and restart backend |
+| AI bar not visible in Query Playground | Key not set for active `AI_PROVIDER` | Add the matching API key to `.env` and restart backend |
 | CORS error in browser console | Frontend URL not in `CORS_ORIGINS` | Add your frontend URL to `CORS_ORIGINS` in `.env` |
 | `faiss-cpu` import error on Apple Silicon | Architecture mismatch | `pip install faiss-cpu` inside the venv; avoid conda mixtures |
 | Login returns 401 with correct password | `JWT_SECRET` changed while a token was active | Clear `localStorage` in the browser and log in again |

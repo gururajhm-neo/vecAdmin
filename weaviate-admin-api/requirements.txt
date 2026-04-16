@@ -22,7 +22,17 @@ chromadb>=0.4.0
 # faiss-cpu>=1.7.4   # CPU-only  — most users
 # faiss-gpu>=1.7.4   # GPU/CUDA  — uncomment if you have CUDA
 
-# ── AI (optional) ─────────────────────────────────────────────────────────────
-# Groq — set GROQ_API_KEY in .env
+# ── AI (optional) — install only the provider(s) you use ────────────────────
+# Set AI_PROVIDER in .env to: groq | openai | anthropic | ollama
+#
+# Groq  — free tier, recommended default
 groq>=1.0.0
+#
+# OpenAI  — pip install openai
+openai>=1.0.0
+#
+# Anthropic  — pip install anthropic
+anthropic>=0.25.0
+#
+# Ollama — no pip package needed; uses HTTP directly (ollama.com)
 

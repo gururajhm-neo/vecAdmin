@@ -23,6 +23,18 @@ try:
 except ImportError:
     _GROQ_AVAILABLE = False
 
+try:
+    from openai import OpenAI
+    _OPENAI_AVAILABLE = True
+except ImportError:
+    _OPENAI_AVAILABLE = False
+
+try:
+    import anthropic as _anthropic_module
+    _ANTHROPIC_AVAILABLE = True
+except ImportError:
+    _ANTHROPIC_AVAILABLE = False
+
 
 # ── Prompt builders ────────────────────────────────────────────────────────────
 
@@ -113,34 +125,101 @@ Write a concise plain-English summary (3–5 sentences max) that:
 Be friendly and direct. No markdown, no bullet points — just clear prose."""
 
 
+# ── Low-level callers (one per provider) ─────────────────────────────────────
+
+def _chat_groq(prompt: str, max_tokens: int) -> str:
+    if not _GROQ_AVAILABLE:
+        raise RuntimeError("groq package not installed — run: pip install groq")
+    if not settings.GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY is not set in .env")
+    client = Groq(api_key=settings.GROQ_API_KEY)
+    resp = client.chat.completions.create(
+        model=settings.GROQ_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=min(max_tokens, settings.GROQ_MAX_TOKENS),
+        temperature=0.1,
+    )
+    return resp.choices[0].message.content.strip()
+
+
+def _chat_openai(prompt: str, max_tokens: int) -> str:
+    if not _OPENAI_AVAILABLE:
+        raise RuntimeError("openai package not installed — run: pip install openai")
+    if not settings.OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not set in .env")
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    resp = client.chat.completions.create(
+        model=settings.OPENAI_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+        temperature=0.1,
+    )
+    return resp.choices[0].message.content.strip()
+
+
+def _chat_anthropic(prompt: str, max_tokens: int) -> str:
+    if not _ANTHROPIC_AVAILABLE:
+        raise RuntimeError("anthropic package not installed — run: pip install anthropic")
+    if not settings.ANTHROPIC_API_KEY:
+        raise RuntimeError("ANTHROPIC_API_KEY is not set in .env")
+    client = _anthropic_module.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    msg = client.messages.create(
+        model=settings.ANTHROPIC_MODEL,
+        max_tokens=max_tokens,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return msg.content[0].text.strip()
+
+
+def _chat_ollama(prompt: str, max_tokens: int) -> str:
+    import json as _json
+    import urllib.request as _req
+    payload = _json.dumps({
+        "model": settings.OLLAMA_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "options": {"num_predict": max_tokens},
+    }).encode()
+    req = _req.Request(
+        f"{settings.OLLAMA_BASE_URL}/api/chat",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    with _req.urlopen(req, timeout=60) as r:
+        data = _json.loads(r.read())
+    return data["message"]["content"].strip()
+
+
 # ── Service class ──────────────────────────────────────────────────────────────
 
 class AIService:
-    def __init__(self) -> None:
-        self._client: Optional[Any] = None
+    """Thin façade — delegates to the active AI_PROVIDER backend."""
 
     @property
     def available(self) -> bool:
-        return _GROQ_AVAILABLE and bool(settings.GROQ_API_KEY)
-
-    def _get_client(self):
-        if not _GROQ_AVAILABLE:
-            raise RuntimeError("groq package not installed. Run: pip install groq")
-        if not settings.GROQ_API_KEY:
-            raise RuntimeError("GROQ_API_KEY is not set in .env")
-        if self._client is None:
-            self._client = Groq(api_key=settings.GROQ_API_KEY)
-        return self._client
+        p = settings.AI_PROVIDER
+        if p == "groq":      return _GROQ_AVAILABLE and bool(settings.GROQ_API_KEY)
+        if p == "openai":    return _OPENAI_AVAILABLE and bool(settings.OPENAI_API_KEY)
+        if p == "anthropic": return _ANTHROPIC_AVAILABLE and bool(settings.ANTHROPIC_API_KEY)
+        if p == "ollama":    return True   # local — always try; fails gracefully at call time
+        return False
 
     def _chat(self, prompt: str, max_tokens: int = 512) -> str:
-        client = self._get_client()
-        response = client.chat.completions.create(
-            model=settings.GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=min(max_tokens, settings.GROQ_MAX_TOKENS),
-            temperature=0.1,  # low temp = deterministic, correct queries
-        )
-        return response.choices[0].message.content.strip()
+        p = settings.AI_PROVIDER
+        if p == "groq":      return _chat_groq(prompt, max_tokens)
+        if p == "openai":    return _chat_openai(prompt, max_tokens)
+        if p == "anthropic": return _chat_anthropic(prompt, max_tokens)
+        if p == "ollama":    return _chat_ollama(prompt, max_tokens)
+        raise ValueError(f"Unknown AI_PROVIDER '{p}'. Choose: groq | openai | anthropic | ollama")
+
+    def _not_configured_msg(self) -> str:
+        hints = {
+            "groq":      "Add GROQ_API_KEY to .env (free at console.groq.com)",
+            "openai":    "Add OPENAI_API_KEY to .env (platform.openai.com)",
+            "anthropic": "Add ANTHROPIC_API_KEY to .env (console.anthropic.com)",
+            "ollama":    "Start Ollama: ollama serve  (ollama.com)",
+        }
+        return f"AI not configured. {hints.get(settings.AI_PROVIDER, 'Set AI_PROVIDER in .env')}"
 
     def nl_to_query(
         self,
@@ -151,7 +230,7 @@ class AIService:
     ) -> Dict[str, Any]:
         """Convert a natural language request to a provider-native query string."""
         if not self.available:
-            return {"error": "AI not configured. Add GROQ_API_KEY to .env"}
+            return {"error": self._not_configured_msg()}
         try:
             prompt = _nl_to_query_prompt(
                 natural_language, provider, query_language, schema_classes
@@ -178,7 +257,7 @@ class AIService:
     ) -> Dict[str, Any]:
         """Return a plain-English explanation of query results."""
         if not self.available:
-            return {"error": "AI not configured. Add GROQ_API_KEY to .env"}
+            return {"error": self._not_configured_msg()}
         try:
             prompt = _explain_prompt(query, results, provider)
             explanation = self._chat(prompt, max_tokens=300)
