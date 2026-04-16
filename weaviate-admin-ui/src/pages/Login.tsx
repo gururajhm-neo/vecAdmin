@@ -77,18 +77,20 @@ const Login: React.FC = () => {
           }}
         >
           {/* Logo/Header */}
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{
-              fontWeight: 'bold',
-              color: 'primary.main',
-              mb: 1,
-            }}
-          >
-            {APP_ORGANIZATION_NAME}
-          </Typography>
+          {APP_ORGANIZATION_NAME && (
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              sx={{
+                fontWeight: 'bold',
+                color: 'primary.main',
+                mb: 1,
+              }}
+            >
+              {APP_ORGANIZATION_NAME}
+            </Typography>
+          )}
           
           <Typography
             variant="h6"

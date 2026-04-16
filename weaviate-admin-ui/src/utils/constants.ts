@@ -1,9 +1,9 @@
 // API Configuration
 export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-export const APP_ORGANIZATION_NAME = process.env.REACT_APP_ORGANIZATION_NAME || 'Your Organization';
-export const APP_TITLE = process.env.REACT_APP_APP_TITLE || 'Weaviate Admin';
+export const APP_ORGANIZATION_NAME = process.env.REACT_APP_ORGANIZATION_NAME || '';
+export const APP_TITLE = process.env.REACT_APP_APP_TITLE || 'VecAdmin';
 export const APP_DESCRIPTION =
-  process.env.REACT_APP_APP_DESCRIPTION || 'Admin tool for monitoring and managing Weaviate';
+  process.env.REACT_APP_APP_DESCRIPTION || 'Admin UI for vector databases';
 export const DEMO_CREDENTIALS = [
   {
     email: process.env.REACT_APP_DEMO_USER_1_EMAIL || 'engineer1@example.com',

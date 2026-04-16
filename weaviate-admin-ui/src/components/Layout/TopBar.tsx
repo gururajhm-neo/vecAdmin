@@ -83,14 +83,16 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, onDesktopMenuClick, isColl
           {isCollapsed ? <MenuIcon /> : <MenuOpenIcon />}
         </IconButton>
 
-        <Typography
-          variant="h6"
-          noWrap
-          component="div"
-          sx={{ flexGrow: 0, mr: 2, fontWeight: 'bold' }}
-        >
-          {APP_ORGANIZATION_NAME}
-        </Typography>
+        {APP_ORGANIZATION_NAME && (
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ flexGrow: 0, mr: 2, fontWeight: 'bold' }}
+          >
+            {APP_ORGANIZATION_NAME}
+          </Typography>
+        )}
 
         <Typography
           variant="subtitle1"
