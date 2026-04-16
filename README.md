@@ -302,7 +302,7 @@ FAISS_INDEX_DIR=./faiss_data
 | `OLLAMA_MODEL` | `llama3` | Ollama model name |
 | `JWT_SECRET` | *(required)* | JWT signing secret — **change before deploying** |
 | `JWT_ALGORITHM` | `HS256` | JWT algorithm |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Token TTL in minutes |
+| `JWT_EXPIRATION_HOURS` | `24` | Token TTL in hours |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed frontend origins |
 | `SCOPE_FIELD_NAME` | `project_id` | Field used to partition data per user |
 | `AUTH_USERS_JSON` | *(see below)* | JSON array of user accounts |
